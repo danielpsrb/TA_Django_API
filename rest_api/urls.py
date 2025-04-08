@@ -17,19 +17,21 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.http import JsonResponse
+from django.conf import settings
+from django.conf.urls.static import static
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
 schema_view = get_schema_view(
-   openapi.Info(
-      title="REST API Documentation using Django Framework",
-      default_version='v1',
-      description="Comprehensive API documentation providing details on available endpoints and their usage.",
-      terms_of_service="https://www.google.com/policies/terms/",
-   ),
-   public=True,
-   permission_classes=(permissions.AllowAny,),
+    openapi.Info(
+        title="REST API Documentation using Django Framework",
+        default_version='v1',
+        description="Comprehensive API documentation providing details on available endpoints and their usage.",
+        terms_of_service="https://www.google.com/policies/terms/",
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
 )
 
 urlpatterns = [
@@ -37,6 +39,9 @@ urlpatterns = [
 
     # Authentication
     path('api/v1/', include('auth_app.urls')),
+    
+    # Charivol
+    path('api/v1/', include('charivol.urls')),
 
     # Swagger UI and Redoc
     path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
@@ -45,3 +50,6 @@ urlpatterns = [
 
     path('', lambda request: JsonResponse({"message": "Hi There, this REST API created on Django! "}), name='home'),
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
