@@ -1,3 +1,4 @@
+from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -34,7 +35,10 @@ from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, Lo
 def get_auth_user(request):
     user = request.user
     serializer = UserSerializer(user)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response({
+        'status': 'ok',
+        'data': serializer.data
+    }, status=status.HTTP_200_OK)
 
 
 @swagger_auto_schema(
@@ -111,13 +115,20 @@ def register(request):
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
-        refresh = RefreshToken.for_user(user)
+        # refresh = RefreshToken.for_user(user)
+        
         return Response({
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-            'user': UserSerializer(user).data
+            'status': 'success',
+            'message': 'User created succesfully, You can login now',
+            'data': {
+                'user': UserSerializer(user).data
+            }
         }, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response({
+        'status': 'error',
+        'message': 'Validasi gagal',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
 
 
 @swagger_auto_schema(
@@ -130,14 +141,16 @@ def register(request):
     }
 )
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])  # BUKAN IsAuthenticated
 def logout(request):
-    serializer = LogoutSerializer(data=request.data)
-    if serializer.is_valid():
-        try:
-            token = RefreshToken(serializer.validated_data['refresh'])
-            token.blacklist()
-            return Response(status=status.HTTP_205_RESET_CONTENT)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        refresh_token = request.data.get("refresh")  # Gunakan .get() untuk menghindari KeyError
+        if not refresh_token:
+            return Response({"error": "Refresh token is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        return Response(status=status.HTTP_205_RESET_CONTENT)
+    except Exception as e:
+        return Response({"error": "Invalid refresh token"}, status=status.HTTP_400_BAD_REQUEST)
+
