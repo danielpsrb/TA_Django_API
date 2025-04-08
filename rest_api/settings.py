@@ -47,6 +47,7 @@ INSTALLED_APPS = [
 
     'drf_yasg',
     'auth_app',
+    'charivol',
 ]
 
 MIDDLEWARE = [
@@ -101,7 +102,7 @@ DATABASES = {
         'NAME': os.getenv('DB_NAME'),
         'USER': os.getenv('DB_USER'),
         'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'), 	  # or the hostname where your MySQL server is running
+        'HOST': os.getenv('DB_HOST'), 	   # or the hostname where your MySQL server is running
         'PORT': os.getenv('DB_PORT'),      # or the port on which your MySQL server is listening
     }
 }
@@ -168,7 +169,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ALGORITHM": "HS256",
     "SIGNING_KEY": os.getenv('DJANGO_JWT_SECRET_KEY'),
@@ -181,6 +182,9 @@ SWAGGER_SETTINGS = {
         "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"},
     }
 }
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # default email backend
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
