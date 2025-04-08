@@ -5,12 +5,10 @@ from django.contrib.auth import authenticate
 from rest_framework.exceptions import AuthenticationFailed
 import re
 
-class UserSerializer(serializers.ModelSerializer):
-    pk = serializers.IntegerField(source='id', read_only=True)
-    
+class UserSerializer(serializers.ModelSerializer):    
     class Meta:
         model = User
-        fields = ('pk', 'first_name', 'last_name', 'username', 'email')
+        fields = ('id', 'first_name', 'last_name', 'username', 'email')
 
 class RegisterSerializer(serializers.ModelSerializer):
     password     = serializers.CharField(write_only=True, min_length=8)
