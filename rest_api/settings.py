@@ -44,6 +44,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    
+    'graphene_django',
+    'graphql_jwt.refresh_token.apps.RefreshTokenConfig',
 
     'drf_yasg',
     'auth_app',
@@ -175,7 +178,7 @@ SIMPLE_JWT = {
     "SIGNING_KEY": os.getenv('DJANGO_JWT_SECRET_KEY'),
 }
 
-AUTH_USER_MODEL = 'auth_app.User'
+AUTH_USER_MODEL = 'auth_app.CustomUser'
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
@@ -196,3 +199,21 @@ EMAIL_HOST_USER = os.getenv('DJANGO_EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('DJANGO_EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = os.getenv('DJANGO_EMAIL_USE_TLS')
 DEFAULT_FROM_EMAIL = os.getenv('DJANGO_DEFAULT_FROM_EMAIL')
+
+GRAPHENE = {
+    "SCHEMA": "gql_api.schema.schema",  # path ke schema global
+    "MIDDLEWARE": [
+        "graphql_jwt.middleware.JSONWebTokenMiddleware",  # middleware JWT
+    ],
+}
+
+GRAPHQL_JWT = {
+    "JWT_SECRET_KEY": os.getenv('DJANGO_JWT_SECRET_KEY'),
+    "JWT_VERIFY_EXPIRATION": True,
+    "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
+    "JWT_EXPIRATION_DELTA": timedelta(hours=2),  # durasi access token
+    "JWT_REFRESH_EXPIRATION_DELTA": timedelta(days=1),  # durasi refresh token
+    "JWT_AUTH_HEADER_PREFIX": "Bearer",
+    "JWT_COOKIE_NAME": "access_token",
+    "JWT_REFRESH_COOKIE_NAME": "refresh_token",
+}
