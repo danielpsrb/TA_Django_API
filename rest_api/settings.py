@@ -178,7 +178,7 @@ SIMPLE_JWT = {
     "SIGNING_KEY": os.getenv('DJANGO_JWT_SECRET_KEY'),
 }
 
-AUTH_USER_MODEL = 'auth_app.CustomUser'
+AUTH_USER_MODEL = 'auth_app.User'
 
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
@@ -203,7 +203,7 @@ DEFAULT_FROM_EMAIL = os.getenv('DJANGO_DEFAULT_FROM_EMAIL')
 GRAPHENE = {
     "SCHEMA": "gql_api.schema.schema",  # path ke schema global
     "MIDDLEWARE": [
-        "graphql_jwt.middleware.JSONWebTokenMiddleware",  # middleware JWT
+        "graphql_jwt.middleware.JSONWebTokenMiddleware",
     ],
 }
 
