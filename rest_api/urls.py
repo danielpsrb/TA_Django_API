@@ -19,9 +19,15 @@ from django.urls import path, include, re_path
 from django.http import JsonResponse
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import permissions
+from graphql_jwt.middleware import JSONWebTokenMiddleware
+
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+
+from graphene_django.views import GraphQLView
+
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -42,6 +48,14 @@ urlpatterns = [
     
     # Charivol
     path('api/v1/', include('charivol.urls')),
+    
+    path(
+        "graphql/",
+        csrf_exempt(GraphQLView.as_view(
+            graphiql=True,
+            middleware=[JSONWebTokenMiddleware()],
+        )),
+    ),
 
     # Swagger UI and Redoc
     path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
