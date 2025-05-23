@@ -110,6 +110,11 @@ DATABASES = {
     }
 }
 
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+SUPABASE_BUCKET = os.getenv('SUPABASE_BUCKET')
+# SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -191,14 +196,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # default email backend
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-EMAIL_BACKEND = os.getenv('DJANGO_EMAIL_ENGINE')
-EMAIL_HOST = os.getenv('DJANGO_EMAIL_HOST')
-EMAIL_PORT = os.getenv('DJANGO_EMAIL_PORT')
-EMAIL_HOST_USER = os.getenv('DJANGO_EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('DJANGO_EMAIL_HOST_PASSWORD')
-EMAIL_USE_TLS = os.getenv('DJANGO_EMAIL_USE_TLS')
-DEFAULT_FROM_EMAIL = os.getenv('DJANGO_DEFAULT_FROM_EMAIL')
+# EMAIL_BACKEND = os.getenv('DJANGO_EMAIL_ENGINE')
+# EMAIL_HOST = os.getenv('DJANGO_EMAIL_HOST')
+# EMAIL_PORT = os.getenv('DJANGO_EMAIL_PORT')
+# EMAIL_HOST_USER = os.getenv('DJANGO_EMAIL_HOST_USER')
+# EMAIL_HOST_PASSWORD = os.getenv('DJANGO_EMAIL_HOST_PASSWORD')
+# EMAIL_USE_TLS = os.getenv('DJANGO_EMAIL_USE_TLS')
+# DEFAULT_FROM_EMAIL = os.getenv('DJANGO_DEFAULT_FROM_EMAIL')
 
 GRAPHENE = {
     "SCHEMA": "gql_api.schema.schema",  # path ke schema global
@@ -206,6 +210,11 @@ GRAPHENE = {
         "graphql_jwt.middleware.JSONWebTokenMiddleware",
     ],
 }
+
+AUTHENTICATION_BACKENDS = [
+    'graphql_jwt.backends.JSONWebTokenBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 GRAPHQL_JWT = {
     "JWT_SECRET_KEY": os.getenv('DJANGO_JWT_SECRET_KEY'),
