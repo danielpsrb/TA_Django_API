@@ -1,5 +1,5 @@
 import graphene
-from auth_app.models import CustomUser
+from auth_app.models import User as CustomUser
 from .types import UserType
 from django.contrib.auth import authenticate
 from graphql import GraphQLError
@@ -8,8 +8,7 @@ from graphql_jwt.refresh_token.models import RefreshToken
 
 class RegisterUser(graphene.Mutation):
     user = graphene.Field(UserType)
-    access = graphene.String()
-    refresh = graphene.String()
+    message = graphene.String()
 
     class Arguments:
         email = graphene.String(required=True)
@@ -43,9 +42,10 @@ class RegisterUser(graphene.Mutation):
             password=password
         )
         
-        access = get_token(user)
-        refresh = create_refresh_token(user)
-        return RegisterUser(user=user, access_token=access, refresh_token=refresh.token)
+        return RegisterUser(
+            user=user,
+            message="User created successfully. You can login now."
+        )
 
 class LoginUser(graphene.Mutation):
     user = graphene.Field(UserType)
