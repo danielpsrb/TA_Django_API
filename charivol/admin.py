@@ -17,7 +17,3 @@ class DonationAreaAdmin(admin.ModelAdmin):
 admin.site.register(Donation)
 class DonationAdmin(admin.ModelAdmin):
     list_display = ('id', 'donor', 'volunteer', 'donation_area', 'donation_name')
-
-admin.site.register(Gallery)
-class GalleryAdmin(admin.ModelAdmin):
-    list_display = ('id', 'donation', 'delivery_picture', 'creation_date')

@@ -2,6 +2,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .models import *
@@ -137,13 +138,11 @@ class NewVolunteerView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
         
-        response_data = {
-            status: 'success',
+        return Response({
+            'status': 'success',
             'message': 'Volunteer created successfully',
             'data': serializer.data
-        }
-        
-        return Response(response_data, status=status.HTTP_201_CREATED)
+        }, status=status.HTTP_201_CREATED)
 
 class ManageVolunteerView(generics.RetrieveUpdateAPIView):
     queryset = Volunteer.objects.all()
@@ -171,19 +170,19 @@ class ManageVolunteerView(generics.RetrieveUpdateAPIView):
         return super().get(request, *args, **kwargs)
 
     @swagger_auto_schema(
-        operation_description="Update volunteer photo and verification (multipart/form-data, Requires JWT Token)",
+    operation_description="Update volunteer photo and verification (multipart/form-data, Requires JWT Token)",
         manual_parameters=[
             openapi.Parameter(
-                name='user_photo',
+                name='photo_url',
                 in_=openapi.IN_FORM,
                 type=openapi.TYPE_FILE,
-                description='User photo',
+                description='Photo url',
                 required=False
             ),
             openapi.Parameter(
                 name='Authorization',
                 in_=openapi.IN_HEADER,
-                description='Bearer JWT token',
+                description='Bearer JWT Access token',
                 type=openapi.TYPE_STRING,
                 required=True
             ),
@@ -191,7 +190,23 @@ class ManageVolunteerView(generics.RetrieveUpdateAPIView):
     )
 
     def patch(self, request, *args, **kwargs):
-        return super().patch(request, *args, **kwargs)
+        volunteer = self.get_object()
+        data = request.data.copy()
+        
+        user_photo = request.FILES.get('photo_url')
+        if user_photo:
+            success, result = upload_image(user_photo, folder='volunteer')
+            if not success:
+                return Response({"error": result}, status=400)
+            data['photo_url'] = result
+        serializer = self.get_serializer(volunteer, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response({
+            'status': 'success',
+            'message': 'Volunteer updated successfully',
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
 
 class AcceptedVolunteerView(generics.ListAPIView):
     queryset = Volunteer.objects.filter(status='ACCEPTED')
@@ -211,14 +226,13 @@ class ViewVolunteerDetailView(generics.RetrieveAPIView):
     lookup_field = 'id'
 
 # Donation views
-class DonateNowView(generics.CreateAPIView):
+class NewDonationView(generics.CreateAPIView):
     queryset = Donation.objects.all()
     parser_classes = [MultiPartParser, FormParser]
-    
     serializer_class = DonationSerializer
     
     @swagger_auto_schema(
-        operation_description="Create a new Donation (Requires JWT Access Token)",
+        operation_description="Create New Donation (Requires JWT Access Token)",
         request_body=DonationSerializer,
         responses={
             201: DonationSerializer,
@@ -230,7 +244,7 @@ class DonateNowView(generics.CreateAPIView):
                 name='donation_photo',
                 in_=openapi.IN_FORM,
                 type=openapi.TYPE_FILE,
-                description='User photo',
+                description='Donation Photo',
                 required=True
             ),
             openapi.Parameter(
@@ -248,13 +262,11 @@ class DonateNowView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         
-        response_data = {
+        return Response({
             'status': 'success',
             'message': 'Donation created successfully',
             'data': serializer.data
-        }
-        
-        return Response(response_data, status=status.HTTP_201_CREATED)
+        }, status=status.HTTP_201_CREATED)
 
 class DonationListView(generics.ListAPIView):
     queryset = Donation.objects.all()
@@ -375,97 +387,145 @@ class DonationDeleteView(generics.DestroyAPIView):
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-class AllDonationsView(generics.ListAPIView):
-    queryset = Donation.objects.all()
-    serializer_class = DonationSerializer
+class ListActiveDonationAreaView(generics.ListAPIView):
+    queryset = DonationArea.objects.filter(is_active=True)
+    serializer_class = DonationAreaSerializer
 
-class DonationHistoryView(generics.ListAPIView):
-    serializer_class = DonationSerializer
+    @swagger_auto_schema(
+        operation_description="Get all active donation areas (is_active=True)",
+        responses={200: DonationAreaSerializer(many=True)},
+        manual_parameters=[
+            openapi.Parameter(
+                'Authorization',
+                in_=openapi.IN_HEADER,
+                description='Bearer JWT Access Token',
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
-    def get_queryset(self):
-        donor_id = self.request.query_params.get('donor_id')
-        return Donation.objects.filter(donor__id=donor_id)
-
-class PendingDonationView(generics.ListAPIView):
-    queryset = Donation.objects.filter(status=DonationStatus.PENDING)
-    serializer_class = DonationSerializer
-
-class AcceptedDonationView(generics.ListAPIView):
-    queryset = Donation.objects.filter(status=DonationStatus.ACCEPTED)
-    serializer_class = DonationSerializer
-
-class RejectedDonationView(generics.ListAPIView):
-    queryset = Donation.objects.filter(status=DonationStatus.REJECTED)
-    serializer_class = DonationSerializer
-
-class AcceptedDonationDetailView(generics.RetrieveAPIView):
-    queryset = Donation.objects.filter(status=DonationStatus.ACCEPTED)
-    serializer_class = DonationSerializer
-    lookup_field = 'id'
-
-class ViewDonationDetailView(generics.RetrieveAPIView):
-    queryset = Donation.objects.all()
-    serializer_class = DonationSerializer
-    lookup_field = 'id'
-
-class DonationDetailDonorView(generics.ListAPIView):
-    serializer_class = DonationSerializer
-
-    def get_queryset(self):
-        donor_id = self.kwargs['pid']
-        return Donation.objects.filter(donor__id=donor_id)
-
-class CollectionRequestView(generics.ListAPIView):
-    queryset = Donation.objects.filter(status=DonationStatus.ACCEPTED)
-    serializer_class = DonationSerializer
-
-class DonationReceivedVolunteerView(generics.ListAPIView):
-    serializer_class = DonationSerializer
-
-    def get_queryset(self):
-        return Donation.objects.filter(volunteer__id=self.request.query_params.get('volunteer_id'), status='RECEIVED')
-
-class DonationNotReceivedVolunteerView(generics.ListAPIView):
-    serializer_class = DonationSerializer
-
-    def get_queryset(self):
-        return Donation.objects.filter(volunteer__id=self.request.query_params.get('volunteer_id')).exclude(status='RECEIVED')
-
-class DonationDeliveredVolunteerView(generics.ListAPIView):
-    serializer_class = DonationSerializer
-
-    def get_queryset(self):
-        return Donation.objects.filter(volunteer__id=self.request.query_params.get('volunteer_id'), status='DELIVERED')
-
-class DonationReceivedDetailView(generics.RetrieveAPIView):
-    serializer_class = DonationSerializer
-    lookup_field = 'id'
-
-    def get_queryset(self):
-        return Donation.objects.filter(status='RECEIVED')
-
-class DonationCollectionDetailView(generics.RetrieveAPIView):
-    serializer_class = DonationSerializer
-    lookup_field = 'id'
-
-    def get_queryset(self):
-        return Donation.objects.filter(status='DELIVERED')
-
-# Gallery views
-class GalleryView(generics.ListAPIView):
-    queryset = Gallery.objects.all()
-    serializer_class = GallerySerializer
-
-# Area views
-class AddAreaView(generics.CreateAPIView):
+class NewDonationAreaView(generics.CreateAPIView):
     queryset = DonationArea.objects.all()
     serializer_class = DonationAreaSerializer
 
-class EditAreaView(generics.RetrieveUpdateAPIView):
+    @swagger_auto_schema(
+        operation_description="Create a new Donation Area (Requires JWT Access Token)",
+        request_body=DonationAreaSerializer,
+        responses={
+            201: DonationAreaSerializer,
+            400: "Bad Request",
+            401: "Unauthorized",
+        },
+        manual_parameters=[
+            openapi.Parameter(
+                'Authorization',
+                in_=openapi.IN_HEADER,
+                description="Bearer JWT Access Token",
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ]
+    )
+    
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({
+            'status': 'success',
+            'message': 'Donation Area created successfully',
+            'data': serializer.data
+        }, status=status.HTTP_201_CREATED)
+
+class ManageDonationAreaView(generics.RetrieveUpdateAPIView):
     queryset = DonationArea.objects.all()
-    serializer_class = DonationAreaSerializer
     lookup_field = 'id'
 
-class ManageAreaView(generics.ListAPIView):
-    queryset = DonationArea.objects.all()
-    serializer_class = DonationAreaSerializer
+    def get_serializer_class(self):
+        if self.request.method == 'PATCH':
+            return DonationAreaUpdateSerializer
+        return DonationAreaSerializer
+
+    @swagger_auto_schema(
+        operation_description="Retrieve a donation area detail (Requires JWT Access Token)",
+        responses={200: DonationAreaSerializer},
+        manual_parameters=[
+            openapi.Parameter(
+                'Authorization',
+                in_=openapi.IN_HEADER,
+                description='Bearer JWT Access Token',
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ]
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Update a donation area fully (PUT - Requires JWT Access Token)",
+        request_body=DonationAreaSerializer,
+        responses={200: DonationAreaSerializer},
+        manual_parameters=[
+            openapi.Parameter(
+                'Authorization',
+                in_=openapi.IN_HEADER,
+                description='Bearer JWT Access Token',
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ]
+    )
+    def put(self, request, *args, **kwargs):
+        return super().put(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Update a donation area partially (PATCH - Only postal code and description)",
+        request_body=DonationAreaUpdateSerializer,
+        responses={200: DonationAreaUpdateSerializer},
+        manual_parameters=[
+            openapi.Parameter(
+                'Authorization',
+                in_=openapi.IN_HEADER,
+                description='Bearer JWT Access Token',
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ]
+    )
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
+
+
+class SoftDeleteDonationAreaView(APIView):
+    @swagger_auto_schema(
+        operation_description="Soft delete a donation area by setting is_active=False (Requires JWT Access Token)",
+        responses={204: 'No Content', 400: 'Bad Request'},
+        manual_parameters=[
+            openapi.Parameter(
+                'Authorization',
+                in_=openapi.IN_HEADER,
+                description='Bearer JWT Access Token',
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
+            openapi.Parameter(
+                'id',
+                in_=openapi.IN_PATH,
+                description='ID dari Donation Area yang ingin di-nonaktifkan',
+                type=openapi.TYPE_INTEGER,
+                required=True
+            )
+        ]
+    )
+    def delete(self, request, id):
+        try:
+            donation_area = DonationArea.objects.get(id=id)
+            donation_area.is_active = False
+            donation_area.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except DonationArea.DoesNotExist:
+            return Response({'detail': 'Donation Area tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)

@@ -6,16 +6,18 @@ from supabase import create_client
 # Initialize Supabase client
 supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
-def upload_image(file, folder='donatur'):
+def upload_image(file, folder=None):
     """
     Uploads an image to Supabase storage and returns (success, result).
     If success is True, result is the public URL.
     If success is False, result is the error message.
     """
     try:
+        if folder is None:
+            folder = 'uploads'
         # File validation
         allowed_extensions = ['jpg', 'jpeg', 'png']
-        max_size = 5 * 1024 * 1024  # 5 MB
+        max_size = 4 * 1024 * 1024  # 4 MB
         file_extension = file.name.split('.')[-1].lower()
 
         if file_extension not in allowed_extensions:

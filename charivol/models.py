@@ -149,16 +149,3 @@ class Donation(models.Model):
     class Meta:
         db_table = 'charivol_donations'
         verbose_name = 'Donation'
-
-class Gallery(models.Model):
-    donation = models.ForeignKey(Donation, on_delete=models.CASCADE)
-    delivery_picture_url = models.URLField(blank=True, null=True)
-    caption = models.CharField(max_length=255, blank=True, null=True)
-    creation_date = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return self.id
-    
-    class Meta:
-        db_table = 'charivol_gallery'
-        verbose_name = 'Gallery'
