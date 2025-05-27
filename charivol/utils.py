@@ -1,5 +1,6 @@
 import mimetypes
 import hashlib
+from urllib.parse import urlparse
 from django.conf import settings
 from supabase import create_client
 
@@ -55,5 +56,24 @@ def upload_image(file, folder=None):
         public_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/{settings.SUPABASE_BUCKET}/{file_path}"
         return True, public_url
 
+    except Exception as e:
+        return False, str(e)
+
+def delete_image(image_url):
+    try:
+        parsed = urlparse(image_url)
+        path = parsed.path.lstrip('/')
+        bucket_name = settings.SUPABASE_BUCKET
+        expected_prefix = f"storage/v1/object/public/{bucket_name}/"
+        
+        if not path.startwith(expected_prefix):
+            return False, "Invalid image URL format."
+        relative_path = path[len(expected_prefix):]
+        response = supabase.storage.from_(bucket_name).remove([relative_path])
+        if isinstance(response, dict) and 'error' in response:
+            return False, response['error']['message']
+        if response.get('data') and len(response['data']) > 0: 
+            return True, "Image deleted successfully."
+        return False, "Image not found or already deleted."
     except Exception as e:
         return False, str(e)

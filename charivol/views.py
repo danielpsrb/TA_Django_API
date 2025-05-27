@@ -241,10 +241,10 @@ class NewDonationView(generics.CreateAPIView):
         },
         manual_parameters=[
             openapi.Parameter(
-                name='donation_photo',
+                name='image_url',
                 in_=openapi.IN_FORM,
                 type=openapi.TYPE_FILE,
-                description='Donation Photo',
+                description='Donation Picture',
                 required=True
             ),
             openapi.Parameter(
@@ -258,7 +258,18 @@ class NewDonationView(generics.CreateAPIView):
     )
     
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        data = request.data.copy()
+        donation_picture = request.FILES.get('image_url')
+        
+        if not donation_picture:
+            return Response({"error": "Image file is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        success, result = upload_image(donation_picture, folder='donations')
+        if not success:
+            return Response({"error": result}, status=status.HTTP_400_BAD_REQUEST)
+        
+        data['image_url'] = result  # Inject URL string to serializer input
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         
@@ -300,15 +311,14 @@ class ManageDonationView(generics.RetrieveUpdateAPIView):
     queryset = Donation.objects.all()
     parser_classes = [MultiPartParser, FormParser]
     permission_classes = [IsAuthenticated]
-    lookup_field = 'pk'  # atau 'id' jika kamu yakin field PK kamu bernama 'id'
 
     def get_serializer_class(self):
         if getattr(self, 'swagger_fake_view', False):
             return DonationSerializer  # default serializer untuk dokumentasi
 
-        if self.request.method == 'GET':
+        if self.request.method in ['GET', 'PUT']:
             return DonationSerializer
-        elif self.request.method in ['PATCH', 'PUT']:
+        elif self.request.method == 'PATCH':
             return DonationUpdateSerializer
         return DonationSerializer  # fallback default
 
@@ -496,8 +506,25 @@ class ManageDonationAreaView(generics.RetrieveUpdateAPIView):
             )
         ]
     )
+    
     def patch(self, request, *args, **kwargs):
-        return super().patch(request, *args, **kwargs)
+        donation = self.get_object()
+        data = request.data.copy()
+        
+        donation_picture = request.FILES.get('image_url')
+        if donation_picture:
+            success, result = upload_image(donation_picture, folder='donations')
+            if not success:
+                return Response({"error": result}, status=400)
+            data['image_url'] = result
+        serializer = self.get_serializer(donation, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response({
+            'status': 'success',
+            'message': 'Donation Area updated successfully',
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
 
 
 class SoftDeleteDonationAreaView(APIView):

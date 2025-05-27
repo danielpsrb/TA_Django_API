@@ -45,31 +45,11 @@ class DonationAreaUpdateSerializer(serializers.ModelSerializer):
 class DonationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Donation
-        fields = ['donation_name', 'image_url', 'description', 'status', 'donor', 'volunteer', 'donation_area']
+        fields = ['donation_name', 'image_url', 'description', 'donor', 'volunteer', 'donation_area']
         read_only_fields = ['donation_date', 'updation_date']
 
 class DonationUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Donation
-        fields = ['image_url','collection_location', 'admin_remarks', 'volunteer_remarks', 'updation_date']
-        read_only_fields = ['donation_date']
-
-    def validate_donation_photo(self, value):
-        return self.validate_image_file(value, field_name='donation_photo')
-
-    def validate_image_file(self, file, field_name):
-        allowed_extensions = ['jpg', 'jpeg', 'png']
-        max_size = 5 * 1024 * 1024
-        file_extension = file.name.split('.')[-1].lower()
-
-        if file_extension not in allowed_extensions:
-            raise serializers.ValidationError(
-                f"{field_name.replace('_', ' ').title()} must be a JPG, JPEG, or PNG file."
-            )
-
-        if file.size > max_size:
-            raise serializers.ValidationError(
-                f"{field_name.replace('_', ' ').title()} size must be less than 5MB."
-            )
-
-        return file
+        fields = ['image_url', 'collection_location', 'status', 'admin_remarks', 'volunteer_remarks', 'updation_date']
+        read_only_fields = ['donation_date', 'updation_date']

@@ -133,8 +133,8 @@ class Donation(models.Model):
         max_length=20,
         choices=DonationStatus.choices,
         default=DonationStatus.PENDING,
-        blank=False,
-        null=False
+        blank=True,
+        null=True
     )
     donation_date = models.DateField(auto_now_add=True)
     admin_remarks = models.CharField(max_length=100, blank=True, null=True)  # Catatan admin
