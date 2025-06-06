@@ -208,23 +208,6 @@ class ManageVolunteerView(generics.RetrieveUpdateAPIView):
             'data': serializer.data
         }, status=status.HTTP_200_OK)
 
-class AcceptedVolunteerView(generics.ListAPIView):
-    queryset = Volunteer.objects.filter(status='ACCEPTED')
-    serializer_class = VolunteerSerializer
-
-class RejectedVolunteerView(generics.ListAPIView):
-    queryset = Volunteer.objects.filter(status='REJECTED')
-    serializer_class = VolunteerSerializer
-
-class AllVolunteerView(generics.ListAPIView):
-    queryset = Volunteer.objects.all()
-    serializer_class = VolunteerSerializer
-
-class ViewVolunteerDetailView(generics.RetrieveAPIView):
-    queryset = Volunteer.objects.all()
-    serializer_class = VolunteerSerializer
-    lookup_field = 'id'
-
 # Donation views
 class NewDonationView(generics.CreateAPIView):
     queryset = Donation.objects.all()
