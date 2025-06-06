@@ -65,10 +65,7 @@ class Volunteer(models.Model):
     )
     photo_url = models.URLField(blank=True, null=True)
     about_me = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=20, blank=True, null=True)  # Status volunteer
     register_date = models.DateTimeField(auto_now_add=True)
-    admin_remarks = models.CharField(max_length=255, blank=True, null=True)  # Catatan admin
-    updation_date = models.DateField(null=True)  # Tanggal terakhir diupdate
     
     def __str__(self):
         return self.user.username
@@ -95,7 +92,7 @@ class DonationArea(models.Model):
         db_table = 'charivol_donation_areas'
         verbose_name = 'Donation Area'
 
-class DonationType(models.TextChoices):
+class DonationTypeItems(models.TextChoices):
     CLOTHING = 'CLOTHING', 'Pakaian'
     FOOD = 'FOOD', 'Makanan'
     STATIONERY = 'STATIONERY', 'Alat Tulis'
@@ -121,15 +118,14 @@ class Donation(models.Model):
     )
     donation_name = models.CharField(
         max_length=40,
-        choices=DonationType.choices,
-        default=DonationType.FOOD,
+        choices=DonationTypeItems.choices,
+        default=DonationTypeItems.FOOD,
         null=False,
         blank=False
     )
     image_url = models.URLField()  # Store Supabase image URL
-    collection_location = models.TextField(blank=True, null=True)
     description = models.TextField(blank=False, null=False)
-    status = models.CharField(
+    donation_status = models.CharField(
         max_length=20,
         choices=DonationStatus.choices,
         default=DonationStatus.PENDING,
@@ -137,11 +133,9 @@ class Donation(models.Model):
         null=True
     )
     donation_date = models.DateField(auto_now_add=True)
-    admin_remarks = models.CharField(max_length=100, blank=True, null=True)  # Catatan admin
     volunteer = models.ForeignKey(Volunteer, on_delete=models.CASCADE, blank=True, null=True)  # Relasi ke volunteer
     donation_area = models.ForeignKey(DonationArea, on_delete=models.CASCADE, blank=True, null=True)  # Relasi ke area donasi
     volunteer_remarks = models.CharField(max_length=100, blank=True, null=True)  # Catatan volunteer
-    updation_date = models.DateField(null=True)  # Tanggal terakhir diupdate
     
     def __str__(self):
         return self.id
