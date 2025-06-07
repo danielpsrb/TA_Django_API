@@ -1,5 +1,5 @@
 # Use python 3.10
-FROM python:3.10-slim-bullseye
+FROM python:3.12-slim-bullseye
 
 # Set the working directory inside the container
 WORKDIR /app
