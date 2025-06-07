@@ -22,10 +22,10 @@ def upload_image(file, folder=None):
         file_extension = file.name.split('.')[-1].lower()
 
         if file_extension not in allowed_extensions:
-            return False, "Unsupported file extension. Only JPG, JPEG, and PNG are allowed."
+            return False, ('client', "Unsupported file extension. Only JPG, JPEG, and PNG are allowed.")
 
         if file.size > max_size:
-            return False, "File too large. Maximum size allowed is 5MB."
+            return False, ('client', "File too large. Maximum size allowed is 4MB.")
 
         # Read file and generate MD5 hash
         file.seek(0)
@@ -39,7 +39,7 @@ def upload_image(file, folder=None):
         # Guess MIME type
         mime_type, _ = mimetypes.guess_type(file.name)
         if mime_type is None:
-            return False, "Unsupported file type."
+            return False, ('client', "Unsupported file type.")
 
         # Upload to Supabase
         response = supabase.storage.from_(settings.SUPABASE_BUCKET).upload(
@@ -50,7 +50,7 @@ def upload_image(file, folder=None):
 
         # Check upload result
         if isinstance(response, dict) and 'error' in response:
-            return False, response['error']['message']
+            return False, ('server', response['error']['message'])
 
         # Build public URL
         public_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/{settings.SUPABASE_BUCKET}/{file_path}"
