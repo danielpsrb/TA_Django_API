@@ -34,7 +34,6 @@ class Donor(models.Model):
     occupation = models.CharField(max_length=40, blank=True, null=True)
     photo_url = models.URLField(blank=True, null=True) # Store Supabase image URL
     register_date = models.DateTimeField(auto_now_add=True)
-    is_verified = models.BooleanField(default=False)  # Verifikasi admin
     
     def __str__ (self):
         return self.user.username
@@ -133,8 +132,8 @@ class Donation(models.Model):
         null=True
     )
     donation_date = models.DateField(auto_now_add=True)
-    volunteer = models.ForeignKey(Volunteer, on_delete=models.CASCADE, blank=True, null=True)  # Relasi ke volunteer
-    donation_area = models.ForeignKey(DonationArea, on_delete=models.CASCADE, blank=True, null=True)  # Relasi ke area donasi
+    volunteer = models.ForeignKey(Volunteer, on_delete=models.SET_NULL, blank=True, null=True)# Relasi ke volunteer
+    donation_area = models.ForeignKey(DonationArea, on_delete=models.SET_NULL, blank=True, null=True)  # Relasi ke area donasi
     volunteer_remarks = models.CharField(max_length=100, blank=True, null=True)  # Catatan volunteer
     
     def __str__(self):

@@ -45,12 +45,15 @@ class NewDonorView(generics.CreateAPIView):
 
 class ManageDonorView(generics.RetrieveUpdateAPIView):
     queryset = Donor.objects.all()
+    serializer_class = DonorUpdateSerializer
     parser_classes = [MultiPartParser, FormParser]
+    lookup_field = 'id'
+    http_method_names = ['get', 'put', 'delete']  # ✅ Only allow GET, PUT, DELETE
 
-    def get_serializer_class(self):
-        if self.request.method == 'PATCH':
-            return DonorUpdateSerializer
-        return DonorSerializer
+    # def get_serializer_class(self):
+    #     if self.request.method == 'PATCH':
+    #         return DonorUpdateSerializer
+    #     return DonorSerializer
 
     @swagger_auto_schema(
         operation_description="Retrieve donor detail (Requires JWT Token)",
@@ -70,6 +73,7 @@ class ManageDonorView(generics.RetrieveUpdateAPIView):
 
     @swagger_auto_schema(
     operation_description="Update donor photo and verification (multipart/form-data, Requires JWT Token)",
+    responses={200: DonorUpdateSerializer},
         manual_parameters=[
             openapi.Parameter(
                 name='photo_url',
@@ -88,7 +92,7 @@ class ManageDonorView(generics.RetrieveUpdateAPIView):
         ]
     )
 
-    def patch(self, request, *args, **kwargs):
+    def put(self, request, *args, **kwargs):
         donor = self.get_object()
         data = request.data.copy()
         
@@ -96,9 +100,11 @@ class ManageDonorView(generics.RetrieveUpdateAPIView):
         if user_photo:
             success, result = upload_image(user_photo, folder='donatur')
             if not success:
-                return Response({"error": result}, status=400)
+                error_type, message = result
+                status_code = status.HTTP_400_BAD_REQUEST if error_type == 'client' else status.HTTP_500_INTERNAL_SERVER_ERROR
+                return Response({"error": message}, status=status_code)
             data['photo_url'] = result  # Inject URL string to serializer input
-        serializer = self.get_serializer(donor, data=data, partial=True)
+        serializer = self.get_serializer(donor, data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         
@@ -107,7 +113,25 @@ class ManageDonorView(generics.RetrieveUpdateAPIView):
             'message': 'Donor updated successfully',
             'data': serializer.data
         }, status=status.HTTP_200_OK)
-
+    
+    #Delete a donor by ID
+    @swagger_auto_schema(
+        operation_description="Delete a donor by ID (Requires JWT Access Token)",
+        manual_parameters=[
+            openapi.Parameter(
+                'Authorization',
+                in_=openapi.IN_HEADER,
+                description='Bearer JWT Access Token',
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ],
+        responses={204: "No Content"}
+    )
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 # Volunteer views
 class NewVolunteerView(generics.CreateAPIView):
@@ -146,12 +170,15 @@ class NewVolunteerView(generics.CreateAPIView):
 
 class ManageVolunteerView(generics.RetrieveUpdateAPIView):
     queryset = Volunteer.objects.all()
+    serializer_class = VolunteerUpdateSerializer
     parser_classes = [MultiPartParser, FormParser]
+    lookup_field = 'id'
+    http_method_names = ['get', 'put', 'delete']
 
-    def get_serializer_class(self):
-        if self.request.method == 'PATCH':
-            return VolunteerUpdateSerializer
-        return VolunteerSerializer
+    # def get_serializer_class(self):
+    #     if self.request.method == 'PATCH':
+    #         return VolunteerUpdateSerializer
+    #     return VolunteerSerializer
 
     @swagger_auto_schema(
         operation_description="Retrieve volunteer detail (Requires JWT Token)",
@@ -189,7 +216,7 @@ class ManageVolunteerView(generics.RetrieveUpdateAPIView):
         ]
     )
 
-    def patch(self, request, *args, **kwargs):
+    def put(self, request, *args, **kwargs):
         volunteer = self.get_object()
         data = request.data.copy()
         
@@ -197,9 +224,11 @@ class ManageVolunteerView(generics.RetrieveUpdateAPIView):
         if user_photo:
             success, result = upload_image(user_photo, folder='volunteer')
             if not success:
-                return Response({"error": result}, status=400)
+                error_type, message = result
+                status_code = status.HTTP_400_BAD_REQUEST if error_type == 'client' else status.HTTP_500_INTERNAL_SERVER_ERROR
+                return Response({"error": message}, status=status_code)
             data['photo_url'] = result
-        serializer = self.get_serializer(volunteer, data=data, partial=True)
+        serializer = self.get_serializer(volunteer, data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response({
@@ -207,6 +236,25 @@ class ManageVolunteerView(generics.RetrieveUpdateAPIView):
             'message': 'Volunteer updated successfully',
             'data': serializer.data
         }, status=status.HTTP_200_OK)
+    
+    #Delete a volunteer by ID
+    @swagger_auto_schema(
+        operation_description="Delete a Volunteer by ID (Requires JWT Access Token)",
+        manual_parameters=[
+            openapi.Parameter(
+                'Authorization',
+                in_=openapi.IN_HEADER,
+                description='Bearer JWT Access Token',
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ],
+        responses={204: "No Content"}
+    )
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 # Donation views
 class NewDonationView(generics.CreateAPIView):
@@ -249,7 +297,9 @@ class NewDonationView(generics.CreateAPIView):
         
         success, result = upload_image(donation_picture, folder='donations')
         if not success:
-            return Response({"error": result}, status=status.HTTP_400_BAD_REQUEST)
+            error_type, message = result
+            status_code = status.HTTP_400_BAD_REQUEST if error_type == 'client' else status.HTTP_500_INTERNAL_SERVER_ERROR
+            return Response({"error": message}, status=status_code)
         
         data['image_url'] = result  # Inject URL string to serializer input
         serializer = self.get_serializer(data=data)
@@ -293,17 +343,9 @@ class DonationListView(generics.ListAPIView):
 class ManageDonationView(generics.RetrieveUpdateAPIView):
     queryset = Donation.objects.all()
     parser_classes = [MultiPartParser, FormParser]
-    permission_classes = [IsAuthenticated]
-
-    def get_serializer_class(self):
-        if getattr(self, 'swagger_fake_view', False):
-            return DonationSerializer  # default serializer untuk dokumentasi
-
-        if self.request.method in ['GET', 'PUT']:
-            return DonationSerializer
-        elif self.request.method == 'PATCH':
-            return DonationUpdateSerializer
-        return DonationSerializer  # fallback default
+    lookup_field = 'id'
+    http_method_names = ['get', 'put', 'delete']  # ✅ Only allow GET, PUT, DELETE
+    # permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Retrieve a donation detail by ID (Requires JWT Access Token)",
@@ -320,28 +362,11 @@ class ManageDonationView(generics.RetrieveUpdateAPIView):
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Update a donation by ID (partial update - PATCH) (Requires JWT Access Token)",
-        request_body=DonationUpdateSerializer,
-        responses={200: DonationUpdateSerializer},
-        manual_parameters=[
-            openapi.Parameter(
-                name='Authorization',
-                in_=openapi.IN_HEADER,
-                description='Bearer <JWT Access Token>',
-                type=openapi.TYPE_STRING,
-                required=True
-            )
-        ]
-    )
-    def patch(self, request, *args, **kwargs):
-        return super().patch(request, *args, **kwargs)
-
+    
     @swagger_auto_schema(
         operation_description="Update a donation by ID (full update - PUT) (Requires JWT Access Token)",
-        request_body=DonationUpdateSerializer,
-        responses={200: DonationUpdateSerializer},
+        request_body=DonationSerializer,
+        responses={200: DonationSerializer},
         manual_parameters=[
             openapi.Parameter(
                 name='Authorization',
@@ -353,16 +378,31 @@ class ManageDonationView(generics.RetrieveUpdateAPIView):
         ]
     )
     def put(self, request, *args, **kwargs):
-        return super().put(request, *args, **kwargs)
+        data = request.data.copy()
+        donation_picture = request.FILES.get('image_url')
+        
+        if not donation_picture:
+            return Response({"error": "Image file is required"}, status=status.HTTP_400_BAD_REQUEST)
+        success, result = upload_image(donation_picture, folder='donations')
+        if not success:
+            error_type, message = result
+            status_code = status.HTTP_400_BAD_REQUEST if error_type == 'client' else status.HTTP_500_INTERNAL_SERVER_ERROR
+            return Response({"error": message}, status=status_code)
+        
+        data['image_url'] = result  # Inject URL string to serializer input
+        donation = self.get_object()
+        serializer = self.get_serializer(donation, data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
 
-class DonationDeleteView(generics.DestroyAPIView):
-    queryset = Donation.objects.all()
-    serializer_class = DonationSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'pk'
-
+        return Response({
+            'status': 'success',
+            'message': 'Donation updated successfully',
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
+    
     @swagger_auto_schema(
-        operation_description="Delete a donation (Requires JWT Access Token)",
+        operation_description="Delete a donation by ID (Requires JWT Access Token)",
         manual_parameters=[
             openapi.Parameter(
                 name='Authorization',
@@ -374,7 +414,6 @@ class DonationDeleteView(generics.DestroyAPIView):
         ],
         responses={204: "No Content"}
     )
-    
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
@@ -435,12 +474,12 @@ class NewDonationAreaView(generics.CreateAPIView):
 
 class ManageDonationAreaView(generics.RetrieveUpdateAPIView):
     queryset = DonationArea.objects.all()
+    serializer_class = DonationAreaSerializer  # Required for schema generation
     lookup_field = 'id'
+    http_method_names = ['get', 'put']  # Only allow GET and PUT methods
 
     def get_serializer_class(self):
-        if self.request.method == 'PATCH':
-            return DonationAreaUpdateSerializer
-        return DonationAreaSerializer
+        return DonationAreaSerializer  # Always return this
 
     @swagger_auto_schema(
         operation_description="Retrieve a donation area detail (Requires JWT Access Token)",
@@ -473,34 +512,8 @@ class ManageDonationAreaView(generics.RetrieveUpdateAPIView):
         ]
     )
     def put(self, request, *args, **kwargs):
-        return super().put(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Update a donation area partially (PATCH - Only postal code and description)",
-        request_body=DonationAreaUpdateSerializer,
-        responses={200: DonationAreaUpdateSerializer},
-        manual_parameters=[
-            openapi.Parameter(
-                'Authorization',
-                in_=openapi.IN_HEADER,
-                description='Bearer JWT Access Token',
-                type=openapi.TYPE_STRING,
-                required=True
-            )
-        ]
-    )
-    
-    def patch(self, request, *args, **kwargs):
-        donation = self.get_object()
-        data = request.data.copy()
-        
-        donation_picture = request.FILES.get('image_url')
-        if donation_picture:
-            success, result = upload_image(donation_picture, folder='donations')
-            if not success:
-                return Response({"error": result}, status=400)
-            data['image_url'] = result
-        serializer = self.get_serializer(donation, data=data, partial=True)
+        donation_area = self.get_object()
+        serializer = self.get_serializer(donation_area, data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response({
@@ -508,7 +521,6 @@ class ManageDonationAreaView(generics.RetrieveUpdateAPIView):
             'message': 'Donation Area updated successfully',
             'data': serializer.data
         }, status=status.HTTP_200_OK)
-
 
 class SoftDeleteDonationAreaView(APIView):
     @swagger_auto_schema(
