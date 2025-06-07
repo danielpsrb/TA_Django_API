@@ -342,6 +342,7 @@ class DonationListView(generics.ListAPIView):
 
 class ManageDonationView(generics.RetrieveUpdateAPIView):
     queryset = Donation.objects.all()
+    serializer_class = DonationUpdateSerializer  # Required for schema generation
     parser_classes = [MultiPartParser, FormParser]
     lookup_field = 'id'
     http_method_names = ['get', 'put', 'delete']  # ✅ Only allow GET, PUT, DELETE
@@ -365,8 +366,8 @@ class ManageDonationView(generics.RetrieveUpdateAPIView):
     
     @swagger_auto_schema(
         operation_description="Update a donation by ID (full update - PUT) (Requires JWT Access Token)",
-        request_body=DonationSerializer,
-        responses={200: DonationSerializer},
+        request_body=DonationUpdateSerializer,
+        responses={200: DonationUpdateSerializer},
         manual_parameters=[
             openapi.Parameter(
                 name='Authorization',
