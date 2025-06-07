@@ -57,7 +57,7 @@ def upload_image(file, folder=None):
         return True, public_url
 
     except Exception as e:
-        return False, str(e)
+        return False, ('server', str(e))
 
 def delete_image(image_url):
     try:
