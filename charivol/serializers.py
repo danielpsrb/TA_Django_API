@@ -47,7 +47,7 @@ class DonationSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Donation
-        fields = ['donation_name', 'image_url', 'description', 'donor', 'volunteer', 'donation_area', 'donation_status', 'volunteer_remarks']
+        fields = ['donation_name', 'image_url', 'description', 'donor']
         read_only_fields = ['donation_date']
 
 class DonationUpdateSerializer(serializers.ModelSerializer):
@@ -55,5 +55,5 @@ class DonationUpdateSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Donation
-        fields = ['image_url', 'donation_status', 'volunteer_remarks']
+        fields = ['donation_name', 'image_url', 'description', 'volunteer', 'donation_area', 'donation_status', 'volunteer_remarks']
         read_only_fields = ['donation_date']
