@@ -38,6 +38,12 @@ class VolunteerQuery(graphene.ObjectType):
 class DonationAreaQuery(graphene.ObjectType):
     donation_area = graphene.Field(DonationAreaType, id=graphene.Int(required=True))
     
+    all_donation_areas = graphene.List(DonationAreaType)
+    
+    # Query untuk mendapatkan semua area donasi yang aktif
+    def resolve_all_donation_areas(self, info):
+        return DonationArea.objects.filter(is_active=True)
+    
     def resolve_donation_area(self, info, id):
         try:
             return DonationArea.objects.get(id=id)
@@ -46,6 +52,11 @@ class DonationAreaQuery(graphene.ObjectType):
 
 class DonationQuery(graphene.ObjectType):
     donation = graphene.Field(DonationType, id=graphene.Int(required=True))
+    all_donations = graphene.List(DonationType)
+    
+    # Query untuk mendapatkan semua donasi
+    def resolve_all_donations(self, info):
+        return Donation.objects.all()
     
     def resolve_donation(self, info, id):
         try:
