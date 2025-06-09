@@ -18,11 +18,9 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
 from django.conf import settings
-from django.conf.urls.static import static
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import permissions
 from graphene_file_upload.django import FileUploadGraphQLView
-from graphene_django.views import GraphQLView
 
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -50,8 +48,7 @@ urlpatterns = [
     
     path(
         "graphql/",
-        csrf_exempt(
-            FileUploadGraphQLView.as_view(graphiql=True, middleware=[]))
+        csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True))
     ),
 
     # Swagger UI and Redoc
@@ -61,6 +58,3 @@ urlpatterns = [
 
     path('', lambda request: JsonResponse({"message": "Hi There, this REST API created on Django! "}), name='home'),
 ]
-
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
