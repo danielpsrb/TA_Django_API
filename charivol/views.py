@@ -43,20 +43,15 @@ class NewDonorView(generics.CreateAPIView):
             'data': serializer.data
         }, status=status.HTTP_201_CREATED)
 
-class ManageDonorView(generics.RetrieveUpdateAPIView):
+class ManageDonorView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Donor.objects.all()
     serializer_class = DonorUpdateSerializer
-    parser_classes = [MultiPartParser, FormParser]
     lookup_field = 'id'
-    http_method_names = ['get', 'put', 'delete']  # ✅ Only allow GET, PUT, DELETE
-
-    # def get_serializer_class(self):
-    #     if self.request.method == 'PATCH':
-    #         return DonorUpdateSerializer
-    #     return DonorSerializer
+    http_method_names = ['get', 'put', 'delete']
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        operation_description="Retrieve donor detail (Requires JWT Token)",
+        operation_description="Retrieve donor detail by ID (Requires JWT Token)",
         responses={200: DonorSerializer},
         manual_parameters=[
             openapi.Parameter(
@@ -69,59 +64,41 @@ class ManageDonorView(generics.RetrieveUpdateAPIView):
         ]
     )
     def get(self, request, *args, **kwargs):
+        donor = self.get_object()
         return super().get(request, *args, **kwargs)
 
     @swagger_auto_schema(
-    operation_description="Update donor photo and verification (multipart/form-data, Requires JWT Token)",
-    responses={200: DonorUpdateSerializer},
+        operation_description="Update donor info (Requires JWT Token, accepts JSON)",
+        request_body=DonorUpdateSerializer,
+        responses={200: DonorUpdateSerializer},
         manual_parameters=[
-            openapi.Parameter(
-                name='photo_url',
-                in_=openapi.IN_FORM,
-                type=openapi.TYPE_FILE,
-                description='Photo url',
-                required=False
-            ),
             openapi.Parameter(
                 name='Authorization',
                 in_=openapi.IN_HEADER,
-                description='Bearer JWT Access token',
+                description='Bearer JWT token',
                 type=openapi.TYPE_STRING,
                 required=True
-            ),
+            )
         ]
     )
-
     def put(self, request, *args, **kwargs):
         donor = self.get_object()
-        data = request.data.copy()
-        
-        user_photo = request.FILES.get('photo_url')
-        if user_photo:
-            success, result = upload_image(user_photo, folder='donatur')
-            if not success:
-                error_type, message = result
-                status_code = status.HTTP_400_BAD_REQUEST if error_type == 'client' else status.HTTP_500_INTERNAL_SERVER_ERROR
-                return Response({"error": message}, status=status_code)
-            data['photo_url'] = result  # Inject URL string to serializer input
-        serializer = self.get_serializer(donor, data=data)
+        serializer = self.get_serializer(donor, data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
-        
         return Response({
             'status': 'success',
             'message': 'Donor updated successfully',
             'data': serializer.data
         }, status=status.HTTP_200_OK)
-    
-    #Delete a donor by ID
+
     @swagger_auto_schema(
-        operation_description="Delete a donor by ID (Requires JWT Access Token)",
+        operation_description="Delete donor by ID (Requires JWT Token)",
         manual_parameters=[
             openapi.Parameter(
                 'Authorization',
                 in_=openapi.IN_HEADER,
-                description='Bearer JWT Access Token',
+                description='Bearer JWT token',
                 type=openapi.TYPE_STRING,
                 required=True
             )
@@ -129,8 +106,8 @@ class ManageDonorView(generics.RetrieveUpdateAPIView):
         responses={204: "No Content"}
     )
     def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
+        donor = self.get_object()
+        self.perform_destroy(donor)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 # Volunteer views
@@ -168,17 +145,12 @@ class NewVolunteerView(generics.CreateAPIView):
             'data': serializer.data
         }, status=status.HTTP_201_CREATED)
 
-class ManageVolunteerView(generics.RetrieveUpdateAPIView):
+class ManageVolunteerView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Volunteer.objects.all()
     serializer_class = VolunteerUpdateSerializer
-    parser_classes = [MultiPartParser, FormParser]
     lookup_field = 'id'
     http_method_names = ['get', 'put', 'delete']
-
-    # def get_serializer_class(self):
-    #     if self.request.method == 'PATCH':
-    #         return VolunteerUpdateSerializer
-    #     return VolunteerSerializer
+    # permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Retrieve volunteer detail (Requires JWT Token)",
@@ -197,38 +169,22 @@ class ManageVolunteerView(generics.RetrieveUpdateAPIView):
         return super().get(request, *args, **kwargs)
 
     @swagger_auto_schema(
-    operation_description="Update volunteer photo and verification (multipart/form-data, Requires JWT Token)",
+        operation_description="Update volunteer info (Requires JWT Token, accepts JSON only)",
+        request_body=VolunteerUpdateSerializer,
+        responses={200: VolunteerUpdateSerializer},
         manual_parameters=[
-            openapi.Parameter(
-                name='photo_url',
-                in_=openapi.IN_FORM,
-                type=openapi.TYPE_FILE,
-                description='Photo url',
-                required=False
-            ),
             openapi.Parameter(
                 name='Authorization',
                 in_=openapi.IN_HEADER,
-                description='Bearer JWT Access token',
+                description='Bearer JWT Access Token',
                 type=openapi.TYPE_STRING,
                 required=True
-            ),
+            )
         ]
     )
-
     def put(self, request, *args, **kwargs):
         volunteer = self.get_object()
-        data = request.data.copy()
-        
-        user_photo = request.FILES.get('photo_url')
-        if user_photo:
-            success, result = upload_image(user_photo, folder='volunteer')
-            if not success:
-                error_type, message = result
-                status_code = status.HTTP_400_BAD_REQUEST if error_type == 'client' else status.HTTP_500_INTERNAL_SERVER_ERROR
-                return Response({"error": message}, status=status_code)
-            data['photo_url'] = result
-        serializer = self.get_serializer(volunteer, data=data)
+        serializer = self.get_serializer(volunteer, data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response({
@@ -236,8 +192,7 @@ class ManageVolunteerView(generics.RetrieveUpdateAPIView):
             'message': 'Volunteer updated successfully',
             'data': serializer.data
         }, status=status.HTTP_200_OK)
-    
-    #Delete a volunteer by ID
+
     @swagger_auto_schema(
         operation_description="Delete a Volunteer by ID (Requires JWT Access Token)",
         manual_parameters=[
@@ -259,9 +214,9 @@ class ManageVolunteerView(generics.RetrieveUpdateAPIView):
 # Donation views
 class NewDonationView(generics.CreateAPIView):
     queryset = Donation.objects.all()
-    parser_classes = [MultiPartParser, FormParser]
     serializer_class = DonationSerializer
-    
+    #permission_classes = [IsAuthenticated]  # Optional: kalau kamu pakai JWT
+
     @swagger_auto_schema(
         operation_description="Create New Donation (Requires JWT Access Token)",
         request_body=DonationSerializer,
@@ -272,13 +227,6 @@ class NewDonationView(generics.CreateAPIView):
         },
         manual_parameters=[
             openapi.Parameter(
-                name='image_url',
-                in_=openapi.IN_FORM,
-                type=openapi.TYPE_FILE,
-                description='Donation Picture',
-                required=True
-            ),
-            openapi.Parameter(
                 name='Authorization',
                 in_=openapi.IN_HEADER,
                 description='Bearer JWT token',
@@ -287,25 +235,11 @@ class NewDonationView(generics.CreateAPIView):
             ),
         ]
     )
-    
     def post(self, request, *args, **kwargs):
-        data = request.data.copy()
-        donation_picture = request.FILES.get('image_url')
-        
-        if not donation_picture:
-            return Response({"error": "Image file is required"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        success, result = upload_image(donation_picture, folder='donations')
-        if not success:
-            error_type, message = result
-            status_code = status.HTTP_400_BAD_REQUEST if error_type == 'client' else status.HTTP_500_INTERNAL_SERVER_ERROR
-            return Response({"error": message}, status=status_code)
-        
-        data['image_url'] = result  # Inject URL string to serializer input
-        serializer = self.get_serializer(data=data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        
+
         return Response({
             'status': 'success',
             'message': 'Donation created successfully',
@@ -314,8 +248,8 @@ class NewDonationView(generics.CreateAPIView):
 
 class DonationListView(generics.ListAPIView):
     queryset = Donation.objects.all()
-    serializer_class = DonationSerializer
-    permission_classes = [IsAuthenticated]
+    serializer_class = AllDonationSerializer
+    # permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
         operation_description="Retrieve all donations (Requires JWT Access Token)",
@@ -328,7 +262,7 @@ class DonationListView(generics.ListAPIView):
                 required=True
             )
         ],
-        responses={200: DonationSerializer(many=True)}
+        responses={200: AllDonationSerializer(many=True)}
     )
     
     def get(self, request, *args, **kwargs):
@@ -336,16 +270,15 @@ class DonationListView(generics.ListAPIView):
         serializer = self.get_serializer(queryset, many=True)
         return Response({
             'status': 'ok',
-            'message': 'List of donations',
+            'message': 'List of All Donations',
             'data': serializer.data
         }, status=status.HTTP_200_OK)
 
-class ManageDonationView(generics.RetrieveUpdateAPIView):
+class ManageDonationView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Donation.objects.all()
-    serializer_class = DonationUpdateSerializer  # Required for schema generation
-    parser_classes = [MultiPartParser, FormParser]
+    serializer_class = DonationUpdateSerializer
     lookup_field = 'id'
-    http_method_names = ['get', 'put', 'delete']  # ✅ Only allow GET, PUT, DELETE
+    http_method_names = ['get', 'put', 'delete']
     # permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
@@ -363,7 +296,7 @@ class ManageDonationView(generics.RetrieveUpdateAPIView):
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
-    
+
     @swagger_auto_schema(
         operation_description="Update a donation by ID (full update - PUT) (Requires JWT Access Token)",
         request_body=DonationUpdateSerializer,
@@ -379,20 +312,8 @@ class ManageDonationView(generics.RetrieveUpdateAPIView):
         ]
     )
     def put(self, request, *args, **kwargs):
-        data = request.data.copy()
-        donation_picture = request.FILES.get('image_url')
-        
-        if not donation_picture:
-            return Response({"error": "Image file is required"}, status=status.HTTP_400_BAD_REQUEST)
-        success, result = upload_image(donation_picture, folder='donations')
-        if not success:
-            error_type, message = result
-            status_code = status.HTTP_400_BAD_REQUEST if error_type == 'client' else status.HTTP_500_INTERNAL_SERVER_ERROR
-            return Response({"error": message}, status=status_code)
-        
-        data['image_url'] = result  # Inject URL string to serializer input
         donation = self.get_object()
-        serializer = self.get_serializer(donation, data=data)
+        serializer = self.get_serializer(donation, data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
@@ -401,7 +322,7 @@ class ManageDonationView(generics.RetrieveUpdateAPIView):
             'message': 'Donation updated successfully',
             'data': serializer.data
         }, status=status.HTTP_200_OK)
-    
+
     @swagger_auto_schema(
         operation_description="Delete a donation by ID (Requires JWT Access Token)",
         manual_parameters=[
@@ -422,11 +343,11 @@ class ManageDonationView(generics.RetrieveUpdateAPIView):
 
 class ListActiveDonationAreaView(generics.ListAPIView):
     queryset = DonationArea.objects.filter(is_active=True)
-    serializer_class = DonationAreaSerializer
+    serializer_class = DonationAreaUpdateSerializer
 
     @swagger_auto_schema(
         operation_description="Get all active donation areas (is_active=True)",
-        responses={200: DonationAreaSerializer(many=True)},
+        responses={200: DonationAreaUpdateSerializer(many=True)},
         manual_parameters=[
             openapi.Parameter(
                 'Authorization',
@@ -438,7 +359,13 @@ class ListActiveDonationAreaView(generics.ListAPIView):
         ]
     )
     def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({
+            'status': 'success',
+            'message': 'List of active donation areas retrieved successfully',
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
 
 class NewDonationAreaView(generics.CreateAPIView):
     queryset = DonationArea.objects.all()
@@ -475,7 +402,7 @@ class NewDonationAreaView(generics.CreateAPIView):
 
 class ManageDonationAreaView(generics.RetrieveUpdateAPIView):
     queryset = DonationArea.objects.all()
-    serializer_class = DonationAreaSerializer  # Required for schema generation
+    serializer_class = DonationAreaUpdateSerializer  # Required for schema generation
     lookup_field = 'id'
     http_method_names = ['get', 'put']  # Only allow GET and PUT methods
 
