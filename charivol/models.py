@@ -1,69 +1,46 @@
 from django.conf import settings
 from django.db import models
-import cuid
+# import cuid
 
 # Create your models here.
 
-def generate_unique_id():
-    return cuid.cuid()
-
-class GenderType(models.TextChoices):
-    MALE = 'Male', 'Laki-laki'
-    FEMALE = 'Female', 'Perempuan'
+# def generate_unique_id():
+#     return cuid.cuid()
 
 class Donor(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='donatur')
-    id = models.CharField(
-        primary_key=True,
-        max_length=25,
-        unique=True,
-        default=generate_unique_id,
-        editable=False
-    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     contact = models.CharField(max_length=20, null=False)
     province = models.CharField(max_length=50, null=True)
     city = models.CharField(max_length=50, null=True)
     address = models.TextField(max_length=255, null=False)
+    photo_url = models.URLField(blank=True, null=True) # Store Supabase image URL
     gender = models.CharField(
         max_length=10,
-        choices=GenderType.choices,
         null=True,
         blank=True,
     )
-    #Work
-    occupation = models.CharField(max_length=40, blank=True, null=True)
-    photo_url = models.URLField(blank=True, null=True) # Store Supabase image URL
+    occupation = models.CharField(max_length=50, blank=True, null=True)
     register_date = models.DateTimeField(auto_now_add=True)
     
-    def __str__ (self):
+    def __str__(self):
         return self.user.username
     
     class Meta:
         db_table = 'charivol_donaturs'
         verbose_name = 'Donatur'
 
-
 class Volunteer(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    id = models.CharField(
-        primary_key=True,
-        max_length=25,
-        unique=True,
-        default=generate_unique_id,
-        editable=False
-    )
     province = models.CharField(max_length=50, null=True)
     city = models.CharField(max_length=50, null=True)
     contact = models.CharField(max_length=20, blank=False, null=False)
     address = models.TextField(blank=False, null=False)
+    photo_url = models.URLField(blank=True, null=True)
     gender = models.CharField(
         max_length=10,
-        choices=GenderType.choices,
         null=True,
         blank=True,
     )
-    photo_url = models.URLField(blank=True, null=True)
-    about_me = models.TextField(blank=True, null=True)
     register_date = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -78,7 +55,7 @@ class DonationArea(models.Model):
     area_name = models.CharField(max_length=100, blank=False, null=False)
     area_province = models.CharField(max_length=50, blank=False, null=False)
     area_city = models.CharField(max_length=50, blank=False, null=False)
-    area_postal_code = models.CharField(max_length=10, blank=True, null=True)
+    area_postal_code = models.CharField(max_length=10, blank=True, null=True)  # Optional field
     area_address = models.TextField(blank=False, null=False)
     description = models.CharField(max_length=255, blank=True, null=True)
     creation_date = models.DateTimeField(auto_now_add=True)
@@ -91,49 +68,14 @@ class DonationArea(models.Model):
         db_table = 'charivol_donation_areas'
         verbose_name = 'Donation Area'
 
-class DonationTypeItems(models.TextChoices):
-    CLOTHING = 'CLOTHING', 'Pakaian'
-    FOOD = 'FOOD', 'Makanan'
-    STATIONERY = 'STATIONERY', 'Alat Tulis'
-    BOOK = 'BOOK', 'Buku'
-    TOY = 'TOY', 'Mainan'
-    FOOTWEAR = 'FOOTWEAR', 'Sepatu'
-    FURNITURE = 'FURNITURE', 'Perabotan'
-    OTHER = 'OTHER', 'Lainnya'
-
-class DonationStatus(models.TextChoices):
-    PENDING = 'PENDING', 'Menunggu Konfirmasi'
-    ACCEPTED = 'ACCEPTED', 'Diterima'
-    REJECTED = 'REJECTED', 'Ditolak'
-
 class Donation(models.Model):
-    donor = models.ForeignKey(Donor, on_delete=models.CASCADE)
-    id = models.CharField(
-        primary_key=True,
-        max_length=25,
-        unique=True,
-        default=generate_unique_id,
-        editable=False
-    )
-    donation_name = models.CharField(
-        max_length=40,
-        choices=DonationTypeItems.choices,
-        default=DonationTypeItems.FOOD,
-        null=False,
-        blank=False
-    )
-    image_url = models.URLField()  # Store Supabase image URL
+    donatur = models.ForeignKey(Donor, on_delete=models.CASCADE)
+    donation_name = models.CharField(max_length=40)
     description = models.TextField(blank=False, null=False)
-    donation_status = models.CharField(
-        max_length=20,
-        choices=DonationStatus.choices,
-        default=DonationStatus.PENDING,
-        blank=True,
-        null=True
-    )
-    donation_date = models.DateField(auto_now_add=True)
+    image_url = models.URLField(blank=True, null=True)  # tetap aman untuk PUT
+    donation_status = models.CharField(max_length=20, default='PENDING')
     volunteer = models.ForeignKey(Volunteer, on_delete=models.SET_NULL, blank=True, null=True)# Relasi ke volunteer
-    donation_area = models.ForeignKey(DonationArea, on_delete=models.SET_NULL, blank=True, null=True)  # Relasi ke area donasi
+    donation_date = models.DateField(auto_now_add=True)
     volunteer_remarks = models.CharField(max_length=100, blank=True, null=True)  # Catatan volunteer
     
     def __str__(self):

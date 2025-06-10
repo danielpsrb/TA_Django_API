@@ -27,27 +27,27 @@ class VolunteerUpdateSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Volunteer
-        fields = ['user_id', 'contact', 'address', 'photo_url', 'gender', 'province', 'city', 'about_me']
+        fields = ['user_id', 'contact', 'address', 'photo_url', 'gender', 'province', 'city']
         read_only_fields = ['register_date']
 
 class DonationAreaSerializer(serializers.ModelSerializer):
     class Meta:
         model = DonationArea
-        fields = ['area_name', 'area_province', 'area_city', 'area_address', 'area_postal_code', 'description', 'is_active']
-        read_only_fields = ['creation_date', 'is_active']
+        fields = ['area_name', 'area_province', 'area_city', 'area_address']
+        read_only_fields = ['id', 'creation_date', 'is_active']
 
-# class DonationAreaUpdateSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = DonationArea
-#         fields = ['area_postal_code', 'description', 'is_active']
-#         read_only_fields = ['creation_date', 'is_active']
+class DonationAreaUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DonationArea
+        fields = ['id', 'area_name', 'area_province', 'area_city', 'area_postal_code', 'area_address', 'description', 'is_active', 'creation_date']
+        read_only_fields = ['id','creation_date', 'is_active']
 
 class DonationSerializer(serializers.ModelSerializer):
     image_url = serializers.URLField(required=False)
     
     class Meta:
         model = Donation
-        fields = ['donation_name', 'image_url', 'description', 'donor']
+        fields = ['donation_name','donation_user', 'image_url', 'description']
         read_only_fields = ['donation_date']
 
 class DonationUpdateSerializer(serializers.ModelSerializer):
@@ -55,5 +55,14 @@ class DonationUpdateSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Donation
-        fields = ['donation_name', 'image_url', 'description', 'volunteer', 'donation_area', 'donation_status', 'volunteer_remarks']
+        fields = ['donation_name', 'image_url', 'description', 'volunteer', 'donation_status']
+        read_only_fields = ['donation_date']
+
+class AllDonationSerializer(serializers.ModelSerializer):
+    image_url = serializers.URLField(required=False)
+    volunteer = VolunteerSerializer(read_only=True)
+
+    class Meta:
+        model = Donation
+        fields = ['id', 'donation_name', 'image_url', 'description', 'donation_date', 'volunteer', 'donation_status']
         read_only_fields = ['donation_date']
