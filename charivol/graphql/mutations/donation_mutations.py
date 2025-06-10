@@ -2,8 +2,7 @@ import graphene
 from graphql import GraphQLError
 from graphene_file_upload.scalars import Upload
 from django.contrib.auth import get_user_model
-from charivol.enums import DonationStatusOptions, DonationTypeOptions
-from charivol.models import Donation, Donor, Volunteer, DonationArea, DonationTypeItems, DonationStatus
+from charivol.models import Donation, Donor, Volunteer, DonationArea
 from charivol.utils import upload_image
 from charivol.graphql.types import DonationType
 
@@ -12,58 +11,46 @@ class CreateDonation(graphene.Mutation):
     message = graphene.String()
 
     class Arguments:
-        donation_name = DonationTypeOptions(required=True)  # Enum untuk jenis donasi
-        image = Upload(required=True)  # Kita pakai Upload untuk menerima file gambar
+        donatur_id = graphene.Int(required=True)
+        donation_name = graphene.String(required=True)
         description = graphene.String(required=True)
-        donor_id = graphene.String(required=True)  # CUID → pakai String
-        volunteer_id = graphene.String(required=True)  # CUID → pakai String
-        donation_area_id = graphene.Int(required=True)  # Auto Increment → pakai Int
+        image_url = graphene.String(required=False)
+        volunteer_id = graphene.Int(required=False)
+        volunteer_remarks = graphene.String(required=False)
 
     def mutate(
         self, info,
-        donation_name, image, description, donor_id, volunteer_id, donation_area_id
+        donatur_id, donation_name, description,
+        image_url=None, volunteer_id=None, volunteer_remarks=None
     ):
-        # Validasi donation_name
-        valid_donation_names = [choice[0] for choice in DonationTypeItems.choices]
-        if donation_name not in valid_donation_names:
-            raise GraphQLError(f"Invalid donation name: {donation_name}. Valid options are: {', '.join(valid_donation_names)}")
-            
         # Validasi donor
         try:
-            donor = Donor.objects.get(id=donor_id)
+            donor = Donor.objects.get(id=donatur_id,)
         except Donor.DoesNotExist:
-            raise GraphQLError(f"Donor with id {donor_id} does not exist")
+            raise GraphQLError(f"Donor with id '{donatur_id,}' does not exist.")
 
-        # Validasi volunteer
-        try:
-            volunteer = Volunteer.objects.get(id=volunteer_id)
-        except Volunteer.DoesNotExist:
-            raise GraphQLError(f"Volunteer with id {volunteer_id} does not exist")
+        # Validasi volunteer (jika dikirim)
+        volunteer = None
+        if volunteer_id:
+            try:
+                volunteer = Volunteer.objects.get(id=volunteer_id)
+            except Volunteer.DoesNotExist:
+                raise GraphQLError(f"Volunteer with id '{volunteer_id}' does not exist.")
 
-        # Validasi donation_area
-        try:
-            donation_area = DonationArea.objects.get(id=donation_area_id)
-        except DonationArea.DoesNotExist:
-            raise GraphQLError(f"Donation Area with id {donation_area_id} does not exist")
-
-        # Upload image ke storage (Supabase, dll.)
-        success, result = upload_image(image, folder='donation')
-        if not success:
-            raise GraphQLError(f"Gagal upload image: {result}")
-
-        # Create Donation
+        # Buat data donasi
         donation = Donation.objects.create(
-            donor=donor,
+            donatur=donor,
             donation_name=donation_name,
-            image_url=result,  # URL dari image upload
             description=description,
+            image_url=image_url,
             volunteer=volunteer,
-            donation_area=donation_area
-            # donation_date otomatis diisi
+            volunteer_remarks=volunteer_remarks
         )
 
-        return CreateDonation(donation=donation, message="Donation created successfully")
-
+        return CreateDonation(
+            donation=donation,
+            message="Donation created successfully"
+        )
 
 # class UpdatePartialDonation(graphene.Mutation):
 #     donation = graphene.Field(DonationType)
@@ -112,41 +99,38 @@ class CreateDonation(graphene.Mutation):
 
 #         return UpdatePartialDonation(donation=donation, message="Donation updated successfully")
 
-class UpdateFullDonation(graphene.Mutation):
+class UpdateDonation(graphene.Mutation):
     donation = graphene.Field(DonationType)
     message = graphene.String()
 
     class Arguments:
-        donation_id = graphene.String(required=True)  # CUID → pakai String
-        donation_name = DonationTypeOptions(required=True)  # Enum untuk jenis donasi
-        image = Upload(required=True)  # Kita pakai Upload untuk menerima file gambar
+        donation_id = graphene.Int(required=True)  # Anda lupa di Arguments → saya tambahkan
+        donation_name = graphene.String(required=True)
+        image_url = graphene.String(required=False)  # Tidak pakai Upload lagi
         description = graphene.String(required=True)
-        volunteer_id = graphene.String(required=False)  # CUID → pakai String
-        donation_area_id = graphene.Int(required=False)  # Auto Increment → pakai Int
-        donation_status = DonationStatusOptions(required=False)
+        volunteer_id = graphene.Int(required=False)  # kembalikan ke Int karena id volunteer biasanya integer
+        donation_status = graphene.String(required=False)  # pakai String biasa
         volunteer_remarks = graphene.String(required=False)
 
     def mutate(
         self, info,
-        donation_id, donation_name, image, description, donation_status, volunteer_id, donation_area_id, volunteer_remarks=None
+        donation_id, donation_name, image_url, description,
+        volunteer_id=None, donation_status=None, volunteer_remarks=None
     ):
-        # Validasi donation_name
-        valid_donation_names = [choice[0] for choice in DonationTypeItems.choices]
-        if donation_name not in valid_donation_names:
-            raise GraphQLError(f"Invalid donation name: {donation_name}. Valid options are: {', '.join(valid_donation_names)}")
-
-
-        # Validasi volunteer
+        # Validasi donation
         try:
-            volunteer = Volunteer.objects.get(id=volunteer_id)
-        except Volunteer.DoesNotExist:
-            raise GraphQLError(f"Volunteer with id {volunteer_id} does not exist")
+            donation = Donation.objects.get(id=donation_id)
+        except Donation.DoesNotExist:
+            raise GraphQLError(f"Donation with id {donation_id} does not exist")
+        
 
-        # Validasi donation_area
-        try:
-            donation_area = DonationArea.objects.get(id=donation_area_id)
-        except DonationArea.DoesNotExist:
-            raise GraphQLError(f"Donation Area with id {donation_area_id} does not exist")
+        # Validasi volunteer (jika dikirim)
+        volunteer = None
+        if volunteer_id:
+            try:
+                volunteer = Volunteer.objects.get(id=volunteer_id)
+            except Volunteer.DoesNotExist:
+                raise GraphQLError(f"Volunteer with id '{volunteer_id}' does not exist.")
 
         # Validasi donation
         try:
@@ -154,49 +138,39 @@ class UpdateFullDonation(graphene.Mutation):
         except Donation.DoesNotExist:
             raise GraphQLError(f"Donation with id {donation_id} does not exist")
 
-        # Upload image ke storage (Supabase, dll.)
-        success, result = upload_image(image, folder='donations')
-        if not success:
-            raise GraphQLError(f"Gagal upload image: {result}")
-
-        # Update Donation fields
+        # Update donation fields
         donation.donation_name = donation_name
-        donation.image_url = result
+        if image_url is not None:
+            donation.image_url = image_url
         donation.description = description
-        donation.volunteer = volunteer
-        donation.donation_area = donation_area
-        
         if donation_status is not None:
-            valid_statuses = [choice[0] for choice in DonationStatus.choices]
-            if donation_status not in valid_statuses:
-                raise GraphQLError(f"Invalid donation status: {donation_status}. Valid options are: {', '.join(valid_statuses)}")
             donation.donation_status = donation_status
-        
-        if volunteer_remarks is not None:
-            donation.volunteer_remarks = volunteer_remarks
-        # Save changes
+        donation.volunteer = volunteer
+        donation.volunteer_remarks = volunteer_remarks
+        # Simpan perubahan
         donation.save()
-        return UpdateFullDonation(donation=donation, message="Donation updated successfully")
+        return UpdateDonation(
+            message="Donation updated successfully",
+            donation=donation,
+        )
 
 class DeleteDonation(graphene.Mutation):
     message = graphene.String()
+    success = graphene.Boolean()
 
     class Arguments:
-        donation_id = graphene.String(required=True)  # CUID → pakai String
+        donation_id = graphene.Int(required=True)
 
     def mutate(self, info, donation_id):
-        # Validasi donation
         try:
             donation = Donation.objects.get(id=donation_id)
+            donation.delete()
+            return DeleteDonation(message="Donation deleted successfully", success=True)
         except Donation.DoesNotExist:
-            raise GraphQLError(f"Donation with id {donation_id} does not exist")
+            return DeleteDonation(message=f"Donation with id {donation_id} not found.", success=False)
 
-        # Hapus Donation
-        donation.delete()
-        return DeleteDonation(message="Donation deleted successfully")
-
-class Mutation(graphene.ObjectType):
+class DonationMutations(graphene.ObjectType):
     create_donation = CreateDonation.Field()
     # update_partial_donation = UpdatePartialDonation.Field()
-    update_full_donation = UpdateFullDonation.Field()
+    update_donation = UpdateDonation.Field()
     delete_donation = DeleteDonation.Field()

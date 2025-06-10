@@ -11,7 +11,7 @@ class CreateDonor(graphene.Mutation):
     message = graphene.String()
 
     class Arguments:
-        user_id = graphene.UUID(required=True)
+        user_id = graphene.Int(required=True)
         contact = graphene.String(required=True)
         address = graphene.String(required=True)
     
@@ -58,22 +58,22 @@ class CreateDonor(graphene.Mutation):
 #         return UpdatePartialDonorProfile(donor=donor, message="Donor profile updated successfully")
 
 # Update All field of Donor Profile
-class UpdateFullDonorProfile(graphene.Mutation):
+class UpdateDonorProfile(graphene.Mutation):
     donor = graphene.Field(DonorType)
     message = graphene.String()
 
     class Arguments:
-        id = graphene.UUID(required=True)
+        id = graphene.Int(required=True)
         contact = graphene.String(required=True)
         address = graphene.String(required=True)
         gender = graphene.String(required=True)
         province = graphene.String(required=True)
         city = graphene.String(required=True)
         occupation = graphene.String(required=True)
-        photo = Upload(required=False)  # optional update photo
+        photo_url = graphene.String(required=False)  # optional update photo
     
     def mutate(
-        self, info, id, contact, address, gender, province, city, occupation, photo=None
+        self, info, id, contact, address, gender, province, city, occupation, photo_url
     ):
         try:
             donor = Donor.objects.get(id=id)
@@ -88,32 +88,31 @@ class UpdateFullDonorProfile(graphene.Mutation):
         donor.city = city
         donor.occupation = occupation
         
-        if photo:
-            success, result = upload_image(photo, folder='donatur')
-            if not success:
-                raise GraphQLError(f"Failed to upload photo: {result}")
-            donor.photo_url = result
+        if photo_url is not None:
+            donor.photo_url = photo_url
+        
         donor.save()
-        return UpdateFullDonorProfile(donor=donor, message="Donor profile updated successfully")
+        return UpdateDonorProfile(donor=donor, message="Donor profile updated successfully")
 
 class DeleteDonor(graphene.Mutation):
     message = graphene.String()
+    success = graphene.Boolean()
 
     class Arguments:
-        id = graphene.UUID(required=True)
+        id = graphene.Int(required=True)
     
     def mutate(self, info, id):
         try:
             donor = Donor.objects.get(id=id)
             donor.delete()
-            return DeleteDonor(message="Donor deleted successfully")
+            return DeleteDonor(message="Donor deleted successfully", success=True)
         except Donor.DoesNotExist:
-            raise GraphQLError(f"Donor with id {id} does not exist")
+            raise GraphQLError(f"Donor with id {id} does not exist", success=False)
         except Exception as e:
             raise GraphQLError(f"An error occurred while deleting the donor: {str(e)}")
 
 class DonorMutations(graphene.ObjectType):
     create_donor = CreateDonor.Field()
     # update_partial_donor_profile = UpdatePartialDonorProfile.Field()
-    update_full_donor_profile = UpdateFullDonorProfile.Field()
+    update_donor_profile = UpdateDonorProfile.Field()
     delete_donor = DeleteDonor.Field()

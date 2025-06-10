@@ -64,7 +64,7 @@ class UpdateDonationArea(graphene.Mutation):
     message = graphene.String()
 
     class Arguments:
-        id = graphene.UUID(required=True)
+        id = graphene.Int(required=True)
         area_name = graphene.String(required=True)
         area_province = graphene.String(required=True)
         area_city = graphene.String(required=True)
@@ -72,11 +72,10 @@ class UpdateDonationArea(graphene.Mutation):
         area_address = graphene.String(required=True)
         # Optional fields
         description = graphene.String(required=False)
-        is_active = graphene.Boolean(required=False)
-
+        
     def mutate(
         self, info, id, area_name, area_province, area_city, area_postal_code=None,
-        area_address=None, description=None, is_active=None
+        area_address=None, description=None
     ):
         try:
             donation_area = DonationArea.objects.get(id=id)
@@ -91,7 +90,6 @@ class UpdateDonationArea(graphene.Mutation):
             'area_postal_code': area_postal_code,
             'area_address': area_address,
             'description': description,
-            'is_active': is_active
         }
         
         # Update fields if provided
@@ -107,20 +105,21 @@ class UpdateDonationArea(graphene.Mutation):
 
 class DeleteDonationArea(graphene.Mutation):
     message = graphene.String()
+    success = graphene.Boolean()
 
     class Arguments:
-        id = graphene.UUID(required=True)
+        id = graphene.Int(required=True)
 
     def mutate(self, info, id):
         try:
             donation_area = DonationArea.objects.get(id=id)
             donation_area.delete()
-            return DeleteDonationArea(message="Donation Area deleted successfully")
+            return DeleteDonationArea(message="Donation Area deleted successfully", success=True)
         except DonationArea.DoesNotExist:
-            raise GraphQLError(f"Donation Area with id {id} does not exist")
+            raise GraphQLError(f"Donation Area with id {id} does not exist", success=False)
 
 class DonationAreaMutations(graphene.ObjectType):
     create_donation_area = CreateDonationArea.Field()
     # update_partial_donation_area = UpdatePartialDonationArea.Field()
-    update_full_donation_area = UpdateDonationArea.Field()
+    update_donation_area = UpdateDonationArea.Field()
     delete_donation_area = DeleteDonationArea.Field()

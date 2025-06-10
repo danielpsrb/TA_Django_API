@@ -11,7 +11,7 @@ class CreateVolunteer(graphene.Mutation):
     message = graphene.String()
 
     class Arguments:
-        user_id = graphene.UUID(required=True)
+        user_id = graphene.Int(required=True)
         contact = graphene.String(required=True)
         address = graphene.String(required=True)
     
@@ -70,22 +70,22 @@ class CreateVolunteer(graphene.Mutation):
 #         )
 
 # Update All field of Volunteer Profile
-class UpdateFullVolunteerProfile(graphene.Mutation):
+class UpdateVolunteerProfile(graphene.Mutation):
     volunteer = graphene.Field(VolunteerType)
     message = graphene.String()
 
     class Arguments:
-        id = graphene.UUID(required=True)
+        id = graphene.Int(required=True)
         contact = graphene.String(required=True)
         address = graphene.String(required=True)
         gender = graphene.String(required=True)
         province = graphene.String(required=True)
         city = graphene.String(required=True)
-        about_me = graphene.String(required=True)
-        user_photo = Upload(required=False)
+        photo_url = graphene.String(required=False)
+
     
     def mutate(
-        self, info, id, contact, address, gender, province, city, about_me, user_photo=None
+        self, info, id, contact, address, gender, province, city, photo_url=None
     ):
         try:
             volunteer = Volunteer.objects.get(id=id)
@@ -98,36 +98,33 @@ class UpdateFullVolunteerProfile(graphene.Mutation):
         volunteer.gender = gender
         volunteer.province = province
         volunteer.city = city
-        volunteer.about_me = about_me
         
-        if user_photo:
-            success, result = upload_image(user_photo, folder='volunteer')
-            if not success:
-                raise GraphQLError(f"Failed to upload photo: {result}")
-            volunteer.photo_url = result
+        if photo_url:
+            volunteer.photo_url = photo_url
         
         volunteer.save()
-        return UpdateFullVolunteerProfile(
+        return UpdateVolunteerProfile(
             volunteer=volunteer, 
             message="Volunteer profile updated successfully"
         )
 
 class DeleteVolunteer(graphene.Mutation):
     message = graphene.String()
+    success = graphene.Boolean()
 
     class Arguments:
-        id = graphene.UUID(required=True)
+        id = graphene.Int(required=True)
     
     def mutate(self, info, id):
         try:
             volunteer = Volunteer.objects.get(id=id)
             volunteer.delete()
-            return DeleteVolunteer(message="Volunteer deleted successfully")
+            return DeleteVolunteer(message="Volunteer deleted successfully", success=True)
         except Volunteer.DoesNotExist:
-            raise GraphQLError(f"Volunteer with id {id} does not exist")
+            raise GraphQLError(f"Volunteer with id {id} does not exist" , success=False)
 
 class VolunteerMutations(graphene.ObjectType):
     create_volunteer = CreateVolunteer.Field()
     # update_partial_volunteer_profile = UpdatePartialVolunteerProfile.Field()
-    update_full_volunteer_profile = UpdateFullVolunteerProfile.Field()
+    update_volunteer_profile = UpdateVolunteerProfile.Field()
     delete_volunteer = DeleteVolunteer.Field()
