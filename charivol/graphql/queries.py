@@ -4,8 +4,8 @@ from .types import DonorType, VolunteerType, DonationAreaType, DonationType
 from graphql import GraphQLError
 
 class DonorQuery(graphene.ObjectType):
-    donor = graphene.Field(DonorType, id=graphene.UUID(required=True))
-    donor_by_user_id = graphene.Field(DonorType, user_id=graphene.UUID(required=True))
+    donor = graphene.Field(DonorType, id=graphene.Int(required=True))
+    donor_by_user_id = graphene.Field(DonorType, user_id=graphene.Int(required=True))
     
     def resolve_donor(self, info, id):
         try:
@@ -20,7 +20,7 @@ class DonorQuery(graphene.ObjectType):
             raise GraphQLError(f"Donor dengan user_id {user_id} tidak ditemukan")
 
 class VolunteerQuery(graphene.ObjectType):
-    volunteer = graphene.Field(VolunteerType, id=graphene.UUID(required=True))
+    volunteer = graphene.Field(VolunteerType, id=graphene.Int(required=True))
     volunteer_by_user_id = graphene.Field(VolunteerType, user_id=graphene.UUID(required=True))
     
     def resolve_volunteer(self, info, id):
