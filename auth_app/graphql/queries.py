@@ -6,7 +6,7 @@ from auth_app.models import User
 
 class Query(graphene.ObjectType):
     current_user = graphene.Field(UserType)
-    user = graphene.Field(UserType, id=graphene.UUID(required=True))
+    user = graphene.Field(UserType, id=graphene.Int(required=True))
 
     @login_required
     def resolve_current_user(self, info):
