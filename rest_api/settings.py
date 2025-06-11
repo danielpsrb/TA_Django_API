@@ -14,7 +14,11 @@ from dotenv import load_dotenv
 from datetime import timedelta
 from pathlib import Path
 
-load_dotenv('.env.local')
+ENV_MODE = os.getenv('ENV_MODE', 'local')
+if ENV_MODE == 'production':
+    load_dotenv('.env.prod')
+else:
+    load_dotenv('.env.local')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,9 +30,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG mode dari file .env, default False
+DEBUG = os.environ.get("DEBUG", "False") in ["True", "true", "1"]
+print(f"ENV_MODE: {ENV_MODE}, DEBUG: {DEBUG}")
 
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1").split(",")
+
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost").split(",")
 
 # Application definition
 INSTALLED_APPS = [
