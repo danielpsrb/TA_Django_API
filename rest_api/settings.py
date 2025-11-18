@@ -33,7 +33,7 @@ SECRET_KEY = 'django-insecure-048*a1ci8o=a3tvxx(5#s!7omrf59uiiu2pbo61jm3k)7)^*0_
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG mode dari file .env, default False
-DEBUG = True
+DEBUG = False
 # print(f"ENV_MODE: {ENV_MODE}, DEBUG: {DEBUG}")
 
 ALLOWED_HOSTS = ['.vercel.app']
@@ -74,7 +74,7 @@ MIDDLEWARE = [
 ]
 
 #CORS Setting
-CORS_ALLOW_ALL_ORIGINS = True   
+CORS_ALLOWED_ORIGINS = ['https://skripsi-django-api.vercel.app/']  
 
 ROOT_URLCONF = 'rest_api.urls'
 
