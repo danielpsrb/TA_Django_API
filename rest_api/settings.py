@@ -20,6 +20,8 @@ from pathlib import Path
 # else:
 #     load_dotenv('.env.local')
 
+load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,15 +29,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+SECRET_KEY = 'django-insecure-048*a1ci8o=a3tvxx(5#s!7omrf59uiiu2pbo61jm3k)7)^*0_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG mode dari file .env, default False
-DEBUG = False
+DEBUG = True
 # print(f"ENV_MODE: {ENV_MODE}, DEBUG: {DEBUG}")
 
-
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ['127.0.0.1', '.vercel.app']
 
 # Application definition
 INSTALLED_APPS = [
