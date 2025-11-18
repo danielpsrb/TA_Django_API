@@ -74,7 +74,7 @@ MIDDLEWARE = [
 ]
 
 #CORS Setting
-CORS_ALLOWED_ORIGINS = ['https://skripsi-django-api.vercel.app/']  
+CORS_ALLOW_ALL_ORIGINS = True   
 
 ROOT_URLCONF = 'rest_api.urls'
 
