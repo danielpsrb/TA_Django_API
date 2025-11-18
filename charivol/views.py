@@ -7,7 +7,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .models import *
 from .serializers import *
-from .utils import upload_image
+# from .utils import upload_image
 
 # Donor views
 class NewDonorView(generics.CreateAPIView):
@@ -48,7 +48,7 @@ class ManageDonorView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = DonorUpdateSerializer
     lookup_field = 'id'
     http_method_names = ['get', 'put', 'delete']
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Retrieve donor detail by ID (Requires JWT Token)",
@@ -336,10 +336,19 @@ class ManageDonationView(generics.RetrieveUpdateDestroyAPIView):
         ],
         responses={204: "No Content"}
     )
-    def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    def delete(self, request, id):
+        try:
+            donation = Donation.objects.get(id=id)
+            donation.delete()  # Hard delete
+            return Response({
+                "status": "success",
+                "message": f"Donation with id {id} successfully deleted"
+            }, status=status.HTTP_200_OK)
+        except Donation.DoesNotExist:
+            return Response({
+                "status": "error",
+                "message": f"Donation with id {id} not found."
+            }, status=status.HTTP_404_NOT_FOUND)
 
 class ListActiveDonationAreaView(generics.ListAPIView):
     queryset = DonationArea.objects.filter(is_active=True)
@@ -404,14 +413,11 @@ class ManageDonationAreaView(generics.RetrieveUpdateAPIView):
     queryset = DonationArea.objects.all()
     serializer_class = DonationAreaUpdateSerializer  # Required for schema generation
     lookup_field = 'id'
-    http_method_names = ['get', 'put']  # Only allow GET and PUT methods
-
-    def get_serializer_class(self):
-        return DonationAreaSerializer  # Always return this
+    http_method_names = ['get', 'put', 'delete']  # Only allow GET, PUT, DELETE methods
 
     @swagger_auto_schema(
         operation_description="Retrieve a donation area detail (Requires JWT Access Token)",
-        responses={200: DonationAreaSerializer},
+        responses={200: DonationAreaUpdateSerializer},
         manual_parameters=[
             openapi.Parameter(
                 'Authorization',
@@ -427,8 +433,8 @@ class ManageDonationAreaView(generics.RetrieveUpdateAPIView):
 
     @swagger_auto_schema(
         operation_description="Update a donation area fully (PUT - Requires JWT Access Token)",
-        request_body=DonationAreaSerializer,
-        responses={200: DonationAreaSerializer},
+        request_body=DonationAreaUpdateSerializer,
+        responses={200: DonationAreaUpdateSerializer},
         manual_parameters=[
             openapi.Parameter(
                 'Authorization',
@@ -449,33 +455,53 @@ class ManageDonationAreaView(generics.RetrieveUpdateAPIView):
             'message': 'Donation Area updated successfully',
             'data': serializer.data
         }, status=status.HTTP_200_OK)
-
-class SoftDeleteDonationAreaView(APIView):
-    @swagger_auto_schema(
-        operation_description="Soft delete a donation area by setting is_active=False (Requires JWT Access Token)",
-        responses={204: 'No Content', 400: 'Bad Request'},
-        manual_parameters=[
-            openapi.Parameter(
-                'Authorization',
-                in_=openapi.IN_HEADER,
-                description='Bearer JWT Access Token',
-                type=openapi.TYPE_STRING,
-                required=True
-            ),
-            openapi.Parameter(
-                'id',
-                in_=openapi.IN_PATH,
-                description='ID dari Donation Area yang ingin di-nonaktifkan',
-                type=openapi.TYPE_INTEGER,
-                required=True
-            )
-        ]
-    )
+    
     def delete(self, request, id):
         try:
             donation_area = DonationArea.objects.get(id=id)
-            donation_area.is_active = False
-            donation_area.save()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            donation_area.delete()  # Hard delete
+            return Response({
+                "status": "success",
+                "message": f"Donation Area with id {id} successfully deleted"
+            }, status=status.HTTP_200_OK)
         except DonationArea.DoesNotExist:
-            return Response({'detail': 'Donation Area tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({
+                "status": "error",
+                "message": f"Donation Area with id {id} not found."
+            }, status=status.HTTP_404_NOT_FOUND)
+
+# class SoftDeleteDonationAreaView(APIView):
+#     @swagger_auto_schema(
+#         operation_description="Soft delete a donation area by setting is_active=False (Requires JWT Access Token)",
+#         responses={204: 'No Content', 400: 'Bad Request'},
+#         manual_parameters=[
+#             openapi.Parameter(
+#                 'Authorization',
+#                 in_=openapi.IN_HEADER,
+#                 description='Bearer JWT Access Token',
+#                 type=openapi.TYPE_STRING,
+#                 required=True
+#             ),
+#             openapi.Parameter(
+#                 'id',
+#                 in_=openapi.IN_PATH,
+#                 description='ID dari Donation Area yang ingin di-nonaktifkan',
+#                 type=openapi.TYPE_INTEGER,
+#                 required=True
+#             )
+#         ]
+#     )
+#     def delete(self, request, id):
+#         try:
+#             donation_area = DonationArea.objects.get(id=id)
+#             donation_area.is_active = False
+#             donation_area.save()
+#             return Response({
+#                 "status": "success",
+#                 "message": f"Donation Area with id {id} successfully disabled (soft delete)"
+#             }, status=status.HTTP_200_OK)
+#         except DonationArea.DoesNotExist:
+#             return Response({
+#                 "status": "error",
+#                 "message": f"Donation Area with id {id} not found."
+#             }, status=status.HTTP_404_NOT_FOUND)

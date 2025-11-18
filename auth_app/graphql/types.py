@@ -3,11 +3,10 @@ from auth_app.models import User as CustomUser
 from graphene_django import DjangoObjectType
 
 class UserType(DjangoObjectType):
-    name = graphene.String()
     
     class Meta:
         model = CustomUser
-        fields = ("id", "email", "first_name", "last_name", "username", "date_joined")
+        fields = ("id", "email", "first_name", "last_name", "username")
     
     def resolve_id(self, info):
         return str(self.id)
@@ -23,7 +22,3 @@ class UserType(DjangoObjectType):
     
     def resolve_username(self, info):
         return self.username if self.username else None
-    
-    def resolve_name(self, info):
-        # Buat gabung first_name + last_name
-        return f"{self.first_name} {self.last_name}" if self.first_name and self.last_name else None

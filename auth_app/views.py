@@ -10,7 +10,7 @@ from .serializers import UserSerializer, RegisterSerializer, LoginSerializer, Lo
 
 @swagger_auto_schema(
     method='get',
-    operation_description="Get authenticated user's details",
+    operation_description="Get authenticated user details",
     manual_parameters=[
         openapi.Parameter(
             'Authorization',
@@ -32,7 +32,7 @@ def get_auth_user(request):
     user = request.user
     serializer = UserSerializer(user)
     return Response({
-        'status': 'ok',
+        'status': 'success',
         'data': serializer.data
     }, status=status.HTTP_200_OK)
 
@@ -73,9 +73,9 @@ def login(request):
         if user:
             refresh = RefreshToken.for_user(user)
             return Response({
+                'status': 'ok',
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
-                'user': UserSerializer(user).data
             }, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -114,7 +114,7 @@ def register(request):
         # refresh = RefreshToken.for_user(user)
         
         return Response({
-            'status': 'success',
+            'status': 'created',
             'message': 'User created succesfully, You can login now',
             'data': {
                 'user': UserSerializer(user).data

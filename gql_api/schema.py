@@ -2,6 +2,7 @@ import graphene
 import graphql_jwt
 
 from auth_app.graphql.mutations import AuthMutations
+from auth_app.graphql.queries import Query as AuthQueries
 
 from charivol.graphql.mutations import (
     DonorMutations,
@@ -14,10 +15,11 @@ from charivol.graphql.queries import (
     DonorQuery,
     VolunteerQuery,
     DonationAreaQuery,
-    DonationQuery
+    DonationQuery,
 )
 
 class Query(
+    AuthQueries,
     DonorQuery,
     VolunteerQuery,
     DonationAreaQuery,

@@ -39,7 +39,7 @@ class DonationAreaSerializer(serializers.ModelSerializer):
 class DonationAreaUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = DonationArea
-        fields = ['id', 'area_name', 'area_province', 'area_city', 'area_postal_code', 'area_address', 'description', 'is_active', 'creation_date']
+        fields = ['area_name', 'area_province', 'area_city', 'area_postal_code', 'area_address', 'description', 'is_active', 'creation_date']
         read_only_fields = ['id','creation_date', 'is_active']
 
 class DonationSerializer(serializers.ModelSerializer):
@@ -47,16 +47,25 @@ class DonationSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Donation
-        fields = ['donation_name','donation_user', 'image_url', 'description']
+        fields = ['donation_name', 'donatur', 'image_url', 'description']
         read_only_fields = ['donation_date']
 
 class DonationUpdateSerializer(serializers.ModelSerializer):
     image_url = serializers.URLField(required=False)
-    
+
     class Meta:
         model = Donation
-        fields = ['donation_name', 'image_url', 'description', 'volunteer', 'donation_status']
+        fields = [
+            'donatur_id',
+            'donation_name',
+            'image_url',
+            'description',
+            'volunteer',           # pastikan ini FK atau sesuai field
+            'volunteer_remarks',      # tambahkan field ini
+            'donation_status'
+        ]
         read_only_fields = ['donation_date']
+
 
 class AllDonationSerializer(serializers.ModelSerializer):
     image_url = serializers.URLField(required=False)

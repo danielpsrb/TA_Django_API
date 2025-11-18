@@ -1,9 +1,7 @@
 import graphene
 from graphql import GraphQLError
-from graphene_file_upload.scalars import Upload
 from django.contrib.auth import get_user_model
 from charivol.models import Donor
-from charivol.utils import upload_image
 from charivol.graphql.types import DonorType
 
 class CreateDonor(graphene.Mutation):

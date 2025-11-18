@@ -44,7 +44,7 @@ class RegisterUser(graphene.Mutation):
         
         return RegisterUser(
             user=user,
-            message="User created successfully. You can login now."
+            message="User created successfully"
         )
 
 class LoginUser(graphene.Mutation):
@@ -65,21 +65,21 @@ class LoginUser(graphene.Mutation):
         refresh = create_refresh_token(user)
         return LoginUser(user=user, access=access, refresh=refresh.token)
 
-class LogoutUser(graphene.Mutation):
-    success = graphene.Boolean()
+# class LogoutUser(graphene.Mutation):
+#     success = graphene.Boolean()
 
-    class Arguments:
-        refresh_token = graphene.String(required=True)
+#     class Arguments:
+#         refresh_token = graphene.String(required=True)
 
-    def mutate(self, info, refresh_token):
-        try:
-            token = RefreshToken.objects.get(token=refresh_token)
-            token.revoke()
-            return LogoutUser(success=True)
-        except RefreshToken.DoesNotExist:
-            raise GraphQLError("Invalid refresh token")
+#     def mutate(self, info, refresh_token):
+#         try:
+#             token = RefreshToken.objects.get(token=refresh_token)
+#             token.revoke()
+#             return LogoutUser(success=True)
+#         except RefreshToken.DoesNotExist:
+#             raise GraphQLError("Invalid refresh token")
 
 class AuthMutations(graphene.ObjectType):
     register_user = RegisterUser.Field()
     login_user = LoginUser.Field()
-    logout_user = LogoutUser.Field()
+    # logout_user = LogoutUser.Field()
