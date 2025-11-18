@@ -77,7 +77,6 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True   
 
 ROOT_URLCONF = 'rest_api.urls'
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
